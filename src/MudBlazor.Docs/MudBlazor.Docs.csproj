@@ -80,6 +80,16 @@
 
   <PropertyGroup>
     <SassCompilerEnableWatcher>false</SassCompilerEnableWatcher>
+    <SassCompilerConfigFile>sasscompiler.json</SassCompilerConfigFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' Or '$(DotNetWatchBuild)' == 'true'">
+    <SassCompilerEnableWatcher>true</SassCompilerEnableWatcher>
+    <SassCompilerConfigFile>sasscompiler.Debug.json</SassCompilerConfigFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SassCompilerConfig>$(SassCompilerConfigFile)</SassCompilerConfig>
   </PropertyGroup>
 
   <ItemGroup>
