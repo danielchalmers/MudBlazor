@@ -10,7 +10,7 @@ namespace MudBlazor.Docs.Services
 #nullable enable
     public class ApiLinkService : IApiLinkService
     {
-        private readonly Dictionary<string, ApiLinkServiceEntry> _entries = [];
+        private readonly Dictionary<string, HashSet<ApiLinkServiceEntry>> _entries = [];
 
         public ApiLinkService(IMenuService menuService)
         {
@@ -20,6 +20,7 @@ namespace MudBlazor.Docs.Services
             Register(menuService.Features);
             Register(menuService.Utilities);
             RegisterAliases();
+            RegisterDocumentedTypes();
         }
 
         /// <inheritdoc />
@@ -33,25 +34,26 @@ namespace MudBlazor.Docs.Services
             // Case is ignored.
             text = text.ToLowerInvariant();
 
-            // TODO: Merge ApiLinkServiceEntry _entries with DocumentedType ApiDocumentation.Types to combine both datasets efficiently.
-
             // Calculate the ratios of all keywords to the search input.
             var ratios = new Dictionary<ApiLinkServiceEntry, double>();
-            foreach (var (keyword, entry) in _entries)
+            foreach (var (keyword, entries) in _entries)
             {
                 var ratio = GetSearchMatchRatio(text, keyword);
 
-                // Assign the highest ratio so far to the entry.
-                if (ratios.TryGetValue(entry, out var highestRatio))
+                foreach (var entry in entries)
                 {
-                    if (ratio > highestRatio)
+                    // Assign the highest ratio so far to the entry.
+                    if (ratios.TryGetValue(entry, out var highestRatio))
                     {
-                        ratios[entry] = ratio;
+                        if (ratio > highestRatio)
+                        {
+                            ratios[entry] = ratio;
+                        }
                     }
-                }
-                else
-                {
-                    ratios.Add(entry, ratio);
+                    else
+                    {
+                        ratios.Add(entry, ratio);
+                    }
                 }
             }
 
@@ -83,13 +85,20 @@ namespace MudBlazor.Docs.Services
         /// <summary>
         /// Adds the specified entry to the search index.
         /// </summary>
-        private void AddEntry(ApiLinkServiceEntry entry)
+        private void AddEntry(ApiLinkServiceEntry entry, IEnumerable<string>? extraKeywords = null)
         {
             void AddKeyword(string? k)
             {
                 if (!string.IsNullOrWhiteSpace(k))
                 {
-                    _entries[k.ToLowerInvariant()] = entry;
+                    var keyword = k.ToLowerInvariant();
+                    if (!_entries.TryGetValue(keyword, out var entries))
+                    {
+                        entries = [];
+                        _entries.Add(keyword, entries);
+                    }
+
+                    entries.Add(entry);
                 }
             }
 
@@ -97,6 +106,16 @@ namespace MudBlazor.Docs.Services
             AddKeyword(entry.SubTitle);
             AddKeyword(entry.ComponentName);
             AddKeyword(entry.Link);
+
+            if (extraKeywords is null)
+            {
+                return;
+            }
+
+            foreach (var keyword in extraKeywords)
+            {
+                AddKeyword(keyword);
+            }
         }
 
         /// <inheritdoc />
@@ -136,6 +155,22 @@ namespace MudBlazor.Docs.Services
             RegisterPage("Side Panel", subtitle: "Go to Drawer", componentType: typeof(MudDrawer));
             RegisterPage("Toast", subtitle: "Go to Snackbar", componentType: typeof(MudSnackbarProvider));
             RegisterPage("Typeahead", subtitle: "Go to Autocomplete", componentType: typeof(MudAutocomplete<T>));
+        }
+
+        private void RegisterDocumentedTypes()
+        {
+            foreach (var type in ApiDocumentation.Types.Values)
+            {
+                var entry = new ApiLinkServiceEntry
+                {
+                    Title = type.NameFriendly,
+                    SubTitle = type.SummaryPlain,
+                    ComponentType = null,
+                    Link = type.ApiUrl
+                };
+
+                AddEntry(entry, [type.Name]);
+            }
         }
 
         /// <summary>
