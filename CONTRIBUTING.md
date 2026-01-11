@@ -13,6 +13,7 @@
   - [Pull Requests](#pull-requests)
     - [Pull Requests which introduce new components](#pull-requests-which-introduce-new-components)
   - [Project structure and where to find the most important files](#project-structure-and-where-to-find-the-most-important-files)
+  - [Hot reload and styling watch](#hot-reload-and-styling-watch)
   - [Coding Dos and Don'ts](#coding-dos-and-donts)
   - [Parameter Registration or Why we can't have Logic in Parameter Setters](#parameter-registration-or-why-we-cant-have-logic-in-parameter-setters)
     - [Example of a bad Parameter definition](#example-of-a-bad-parameter-definition)
@@ -113,6 +114,16 @@ Most important files:
 -   Component doc pages ([Link](https://github.com/MudBlazor/MudBlazor/tree/dev/src/MudBlazor.Docs/Pages/Components))
 -   Component tests ([Link](https://github.com/MudBlazor/MudBlazor/tree/dev/src/MudBlazor.UnitTests/Components))
 -   Test components ([Link](https://github.com/MudBlazor/MudBlazor/tree/dev/src/MudBlazor.UnitTests.Viewer/TestComponents))
+
+## Hot reload and styling watch
+
+To get live CSS updates with source maps while iterating on the docs or component styles, run the docs server in Debug with `dotnet watch`:
+
+```bash
+dotnet watch --project src/MudBlazor.Docs.Server/MudBlazor.Docs.Server.csproj --configuration Debug
+```
+
+In Debug (or when `DotNetWatchBuild` is set), the Sass compiler watches SCSS changes and emits expanded CSS with source maps for both `MudBlazor` and `MudBlazor.Docs`. Keep the watcher running to see styling changes refresh alongside Blazor hot reload.
 
 ## Coding Dos and Don'ts
 

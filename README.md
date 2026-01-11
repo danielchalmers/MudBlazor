@@ -115,6 +115,16 @@ Contributions from the community are what make MudBlazor successful.
 📚 Check out our [contribution guidelines](/CONTRIBUTING.md) to get started and learn more about how the project works.  
 🧪 If a PR fixes something you reported, [locally test it](https://github.com/MudBlazor/MudBlazor/discussions/12085) to ensure your app works as expected.
 
+### Hot reload and SCSS watch
+
+For live styling changes while working on the docs, run the server in Debug with `dotnet watch`:
+
+```bash
+dotnet watch --project src/MudBlazor.Docs.Server/MudBlazor.Docs.Server.csproj --configuration Debug
+```
+
+When running in Debug (or when `DotNetWatchBuild` is true), the Sass compiler watches SCSS changes and outputs expanded CSS with source maps for both the main library and docs assets. Keep the watcher running to see CSS updates flow alongside Blazor hot reload.
+
 ## ⚙️ Version Support
 
 | MudBlazor | .NET | Support |
