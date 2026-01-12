@@ -8,7 +8,7 @@ namespace MudBlazor;
 
 #nullable enable
 /// <summary>
-/// Allows registering a hotkey.
+/// Add keyboard shortcuts that trigger actions or toggle content.
 /// </summary>
 public partial class MudHotkey : MudComponentBase, IAsyncDisposable
 {

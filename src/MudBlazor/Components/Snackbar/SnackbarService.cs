@@ -13,7 +13,7 @@ using MudBlazor.Components.Snackbar.InternalComponents;
 namespace MudBlazor
 {
     /// <summary>
-    /// A service for managing snackbars.
+    /// Service that queues and displays snackbars (toast notifications).
     /// </summary>
     public class SnackbarService : ISnackbar
     {

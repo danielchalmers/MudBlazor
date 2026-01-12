@@ -4,9 +4,8 @@ using MudBlazor.Utilities;
 namespace MudBlazor
 {
 #nullable enable
-
     /// <summary>
-    /// A temporary placeholder for content while data is loaded.
+    /// Skeleton placeholder that mimics content while data loads.
     /// </summary>
     public partial class MudSkeleton : MudComponentBase
     {

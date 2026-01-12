@@ -8,9 +8,8 @@ using MudBlazor.Utilities;
 namespace MudBlazor;
 
 #nullable enable
-
 /// <summary>
-/// A component for organizing the layout of page content.
+/// Responsive grid layout for rows and columns.
 /// </summary>
 /// <seealso cref="MudItem"/>
 public partial class MudGrid : MudComponentBase

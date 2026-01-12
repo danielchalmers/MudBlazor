@@ -5,7 +5,7 @@ namespace MudBlazor;
 
 #nullable enable
 /// <summary>
-/// Represents a button consisting of an icon that can be toggled between two distinct states.
+/// Icon button that toggles between on and off states.
 /// </summary>
 /// <remarks>
 /// Creates a <see href="https://developer.mozilla.org/docs/Web/HTML/Element/Button">button</see> element,

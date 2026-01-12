@@ -16,7 +16,7 @@ using MudBlazor.Utilities.Throttle;
 namespace MudBlazor
 {
     /// <summary>
-    /// A set of views organized into one or more <see cref="MudTabPanel" /> components.
+    /// Tabbed navigation that organizes content into pages.
     /// </summary>
     public partial class MudTabs : MudComponentBase, IAsyncDisposable
     {

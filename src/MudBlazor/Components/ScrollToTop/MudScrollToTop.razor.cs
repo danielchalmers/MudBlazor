@@ -5,9 +5,8 @@ using MudBlazor.Utilities;
 namespace MudBlazor
 {
 #nullable enable
-
     /// <summary>
-    /// A button which lets the user jump to the top of the page.
+    /// Trigger component that scrolls a target element back to the top.
     /// </summary>
     public partial class MudScrollToTop : IDisposable
     {
