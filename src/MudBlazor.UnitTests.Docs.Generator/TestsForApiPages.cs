@@ -183,6 +183,7 @@ public partial class TestsForApiPages
             cb.AddLine("using MudBlazor.Docs.Pages.Api;");
             cb.AddLine("using MudBlazor.Docs.Services;");
             cb.AddLine("using NUnit.Framework;");
+            cb.AddLine("using System.Collections.Generic;");
             cb.AddLine();
             cb.AddLine("namespace MudBlazor.UnitTests.Docs.Generated");
             cb.AddLine("{");
@@ -237,6 +238,10 @@ public partial class TestsForApiPages
                 // ... which aren't clone strategies
                 && !type.Name.Contains("SystemTextJson"))
             .ToList();
+        cb.AddLine("private static IEnumerable<TestCaseData> ApiCases()");
+        cb.AddLine("{");
+        cb.IndentLevel++;
+
         foreach (var type in mudBlazorComponents)
         {
             // Skip MudBlazor.Color and MudBlazor.Input types
@@ -245,26 +250,35 @@ public partial class TestsForApiPages
                 continue;
             }
 
-            cb.AddLine("[Test]");
-            cb.AddLine($"public async Task {type.Name.Replace("`", "")}_API_TestAsync()");
-            cb.AddLine("{");
-            cb.IndentLevel++;
-            // Create Api.razor with a type
-            cb.AddLine(@$"ctx.Services.AddSingleton<NavigationManager>(new MockNavigationManager(""https://localhost:2112/"", ""https://localhost:2112/components/{type.Name}""));");
-            cb.AddLine(@$"var comp = ctx.Render<Api>(parameters => parameters.Add(x => x.TypeName, ""{type.Name}""));");
-            cb.AddLine(@$"await ctx.Services.GetService<IRenderQueueService>().WaitUntilEmpty();");
-            // Make sure docs for the type were actually found
-            cb.AddLine(@$"comp.Markup.Should().NotContain(""Sorry, the type {type.Name} was not found"");");
-            // Should there be a link to the example page?
-            if (TypesWithExamples.Exists(exampleType => exampleType.Name == type.Name))
-            {
-                // Yes.  Check for the example link
-                cb.AddLine(@$"var exampleLink = comp.FindComponents<MudLink>().FirstOrDefault(link => link.Instance.Href != null && link.Instance.Href.StartsWith(""/component""));");
-                cb.AddLine(@$"exampleLink.Should().NotBeNull();");
-            }
-            cb.IndentLevel--;
-            cb.AddLine("}");
+            var testName = type.Name.Replace("`", "");
+            var hasExample = TypesWithExamples.Exists(exampleType => exampleType.Name == type.Name);
+            cb.AddLine($"yield return new TestCaseData(\"{type.Name}\", {hasExample.ToString().ToLowerInvariant()}).SetName(\"{testName}_API_Test\");");
         }
+
+        cb.IndentLevel--;
+        cb.AddLine("}");
+        cb.AddLine();
+        cb.AddLine("[TestCaseSource(nameof(ApiCases))]");
+        cb.AddLine("[Parallelizable(ParallelScope.All)]");
+        cb.AddLine("public async Task ApiPage_Renders(string typeName, bool hasExample)");
+        cb.AddLine("{");
+        cb.IndentLevel++;
+        // Create Api.razor with a type
+        cb.AddLine("ctx.Services.AddSingleton<NavigationManager>(new MockNavigationManager(\"https://localhost:2112/\", $\"https://localhost:2112/components/{typeName}\"));");
+        cb.AddLine(@"var comp = ctx.Render<Api>(parameters => parameters.Add(x => x.TypeName, typeName));");
+        cb.AddLine(@"await ctx.Services.GetService<IRenderQueueService>().WaitUntilEmpty();");
+        // Make sure docs for the type were actually found
+        cb.AddLine(@"comp.Markup.Should().NotContain($""Sorry, the type {typeName} was not found"");");
+        cb.AddLine("if (hasExample)");
+        cb.AddLine("{");
+        cb.IndentLevel++;
+        // Yes.  Check for the example link
+        cb.AddLine(@"var exampleLink = comp.FindComponents<MudLink>().FirstOrDefault(link => link.Instance.Href != null && link.Instance.Href.StartsWith(""/component""));");
+        cb.AddLine(@"exampleLink.Should().NotBeNull();");
+        cb.IndentLevel--;
+        cb.AddLine("}");
+        cb.IndentLevel--;
+        cb.AddLine("}");
     }
 
     /// <summary>
@@ -272,23 +286,32 @@ public partial class TestsForApiPages
     /// </summary>
     public void WriteLegacyApiLinkTests(CodeBuilder cb)
     {
+        cb.AddLine("private static IEnumerable<TestCaseData> LegacyApiCases()");
+        cb.AddLine("{");
+        cb.IndentLevel++;
+
         foreach (var url in _legacyApiAddresses)
         {
             var component = url.Replace("api/", "");
-
-            cb.AddLine("[Test]");
-            cb.AddLine($"public async Task {component.Replace("/", "_")}_Legacy_API_TestAsync()");
-            cb.AddLine("{");
-            cb.IndentLevel++;
-            // Create Api.razor with a type
-            cb.AddLine(@$"ctx.Services.AddSingleton<NavigationManager>(new MockNavigationManager(""https://localhost:2112/"", ""https://localhost:2112/components/{url}""));");
-            cb.AddLine(@$"var comp = ctx.Render<Api>(parameters => parameters.Add(x => x.TypeName, ""{component}""));");
-            cb.AddLine(@$"await ctx.Services.GetService<IRenderQueueService>().WaitUntilEmpty();");
-            // Make sure docs for the type were actually found
-            cb.AddLine(@$"comp.Markup.Should().NotContain(""Sorry, the type {component} was not found"");");
-            cb.IndentLevel--;
-            cb.AddLine("}");
+            cb.AddLine($"yield return new TestCaseData(\"{component}\", \"{url}\").SetName(\"{component.Replace("/", "_")}_Legacy_API_Test\");");
         }
+
+        cb.IndentLevel--;
+        cb.AddLine("}");
+        cb.AddLine();
+        cb.AddLine("[TestCaseSource(nameof(LegacyApiCases))]");
+        cb.AddLine("[Parallelizable(ParallelScope.All)]");
+        cb.AddLine("public async Task LegacyApiPage_Renders(string component, string url)");
+        cb.AddLine("{");
+        cb.IndentLevel++;
+        // Create Api.razor with a type
+        cb.AddLine("ctx.Services.AddSingleton<NavigationManager>(new MockNavigationManager(\"https://localhost:2112/\", $\"https://localhost:2112/components/{url}\"));");
+        cb.AddLine(@"var comp = ctx.Render<Api>(parameters => parameters.Add(x => x.TypeName, component));");
+        cb.AddLine(@"await ctx.Services.GetService<IRenderQueueService>().WaitUntilEmpty();");
+        // Make sure docs for the type were actually found
+        cb.AddLine(@"comp.Markup.Should().NotContain($""Sorry, the type {component} was not found"");");
+        cb.IndentLevel--;
+        cb.AddLine("}");
     }
 
     /// <summary>

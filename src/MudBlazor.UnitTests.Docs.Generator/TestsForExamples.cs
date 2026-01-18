@@ -21,6 +21,8 @@ public class TestsForExamples
             cb.AddLine("using MudBlazor.Docs.Examples;");
             cb.AddLine("using MudBlazor.Docs.Wireframes;");
             cb.AddLine("using NUnit.Framework;");
+            cb.AddLine("using System;");
+            cb.AddLine("using System.Collections.Generic;");
             cb.AddLine();
 
             cb.AddLine("namespace MudBlazor.UnitTests.Docs.Generated");
@@ -29,6 +31,10 @@ public class TestsForExamples
             cb.AddLine("// These tests just check if all the examples from the doc page render without errors");
             cb.AddLine("[System.CodeDom.Compiler.GeneratedCodeAttribute(\"MudBlazor.Docs.Compiler\", \"0.0.0.0\")]");
             cb.AddLine("public partial class ExampleDocsTests");
+            cb.AddLine("{");
+            cb.IndentLevel++;
+
+            cb.AddLine("private static IEnumerable<TestCaseData> ExampleCases()");
             cb.AddLine("{");
             cb.IndentLevel++;
 
@@ -44,14 +50,21 @@ public class TestsForExamples
                 // skip over table/data grid virtualization since it takes too long.
                 if (filename == "TableVirtualizationExample.razor" || filename == "DataGridVirtualizationExample.razor")
                     continue;
-                cb.AddLine("[Test]");
-                cb.AddLine($"public void {componentName}_Test()");
-                cb.AddLine("{");
-                cb.IndentLevel++;
-                cb.AddLine($"ctx.Render<{componentName}>();");
-                cb.IndentLevel--;
-                cb.AddLine("}");
+
+                cb.AddLine($"yield return new TestCaseData(typeof({componentName})).SetName(\"{componentName}_Test\");");
             }
+
+            cb.IndentLevel--;
+            cb.AddLine("}");
+            cb.AddLine();
+            cb.AddLine("[TestCaseSource(nameof(ExampleCases))]");
+            cb.AddLine("[Parallelizable(ParallelScope.All)]");
+            cb.AddLine("public void Example_Renders(Type componentType)");
+            cb.AddLine("{");
+            cb.IndentLevel++;
+            cb.AddLine("ctx.RenderComponent(componentType);");
+            cb.IndentLevel--;
+            cb.AddLine("}");
 
             cb.IndentLevel--;
             cb.AddLine("}");
