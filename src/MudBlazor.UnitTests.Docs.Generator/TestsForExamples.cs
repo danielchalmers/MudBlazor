@@ -18,8 +18,11 @@ public class TestsForExamples
             var cb = new CodeBuilder();
 
             cb.AddHeader();
+            cb.AddLine("using System;");
+            cb.AddLine("using Microsoft.Extensions.DependencyInjection;");
             cb.AddLine("using MudBlazor.Docs.Examples;");
             cb.AddLine("using MudBlazor.Docs.Wireframes;");
+            cb.AddLine("using MudBlazor.Services;");
             cb.AddLine("using NUnit.Framework;");
             cb.AddLine();
 
@@ -31,6 +34,7 @@ public class TestsForExamples
             cb.AddLine("public partial class ExampleDocsTests");
             cb.AddLine("{");
             cb.IndentLevel++;
+            var exampleComponents = new List<string>();
 
             foreach (var entry in Directory.EnumerateFiles(Paths.DocsDirPath, "*.razor", SearchOption.AllDirectories)
                 .OrderBy(e => e.Replace("\\", "/"), StringComparer.Ordinal))
@@ -44,14 +48,47 @@ public class TestsForExamples
                 // skip over table/data grid virtualization since it takes too long.
                 if (filename == "TableVirtualizationExample.razor" || filename == "DataGridVirtualizationExample.razor")
                     continue;
-                cb.AddLine("[Test]");
-                cb.AddLine($"public void {componentName}_Test()");
-                cb.AddLine("{");
-                cb.IndentLevel++;
-                cb.AddLine($"ctx.Render<{componentName}>();");
-                cb.IndentLevel--;
-                cb.AddLine("}");
+                exampleComponents.Add(componentName);
             }
+
+            cb.AddLine("private static readonly Type[][] ExampleComponentBatches =");
+            cb.AddLine("[");
+            cb.IndentLevel++;
+            const int batchSize = 12;
+            for (var i = 0; i < exampleComponents.Count; i += batchSize)
+            {
+                cb.AddLine("[");
+                cb.IndentLevel++;
+                foreach (var componentName in exampleComponents.Skip(i).Take(batchSize))
+                {
+                    cb.AddLine($"typeof({componentName}),");
+                }
+                cb.IndentLevel--;
+                cb.AddLine("],");
+            }
+            cb.IndentLevel--;
+            cb.AddLine("];");
+            cb.AddLine();
+            cb.AddLine("[TestCaseSource(nameof(ExampleComponentBatches))]");
+            cb.AddLine("public async Task Examples_Render_Without_Errors(Type[] components)");
+            cb.AddLine("{");
+            cb.IndentLevel++;
+            cb.AddLine("await using var context = CreateContext();");
+            cb.AddLine("foreach (var componentType in components)");
+            cb.AddLine("{");
+            cb.IndentLevel++;
+            cb.AddLine("context.RenderInsideRenderTree(builder =>");
+            cb.AddLine("{");
+            cb.IndentLevel++;
+            cb.AddLine("builder.OpenComponent(0, componentType);");
+            cb.AddLine("builder.CloseComponent();");
+            cb.IndentLevel--;
+            cb.AddLine("});");
+            cb.AddLine("await context.Services.GetRequiredService<IRenderQueueService>().WaitUntilEmpty();");
+            cb.IndentLevel--;
+            cb.AddLine("}");
+            cb.IndentLevel--;
+            cb.AddLine("}");
 
             cb.IndentLevel--;
             cb.AddLine("}");
