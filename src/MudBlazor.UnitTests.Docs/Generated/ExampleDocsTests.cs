@@ -19,7 +19,6 @@ namespace MudBlazor.UnitTests.Docs.Generated
     {
         private static readonly ServiceDescriptor[] DefaultServices = CreateDefaultServices();
         private BunitContext ctx;
-        private IRenderQueueService renderQueueService;
 
         private static ServiceDescriptor[] CreateDefaultServices()
         {
@@ -61,16 +60,12 @@ namespace MudBlazor.UnitTests.Docs.Generated
             {
                 ctx.Services.Add(descriptor);
             }
-            renderQueueService = ctx.Services.GetRequiredService<IRenderQueueService>();
         }
 
         [TearDown]
         public async Task TearDown()
         {
-            if (renderQueueService is not null)
-            {
-                await renderQueueService.WaitUntilEmpty();
-            }
+            await WaitForRenderQueueAsync();
 
             if (ctx is not null)
             {
@@ -82,7 +77,13 @@ namespace MudBlazor.UnitTests.Docs.Generated
             where TComponent : IComponent
         {
             ctx.Render<TComponent>();
-            await renderQueueService.WaitUntilEmpty();
+            await WaitForRenderQueueAsync();
+        }
+
+        private Task WaitForRenderQueueAsync()
+        {
+            var queueService = ctx.Services.GetRequiredService<IRenderQueueService>();
+            return queueService.WaitUntilEmpty();
         }
     }
 }

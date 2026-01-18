@@ -20,7 +20,6 @@ namespace MudBlazor.UnitTests.Docs.Generated
     {
         private static readonly ServiceDescriptor[] DefaultServices = CreateDefaultServices();
         private BunitContext ctx;
-        private IRenderQueueService renderQueueService;
 
         private static ServiceDescriptor[] CreateDefaultServices()
         {
@@ -60,7 +59,6 @@ namespace MudBlazor.UnitTests.Docs.Generated
             {
                 ctx.Services.Add(descriptor);
             }
-            renderQueueService = ctx.Services.GetRequiredService<IRenderQueueService>();
         }
 
         // This shows how to test a docs page with incremental rendering.
@@ -90,10 +88,7 @@ namespace MudBlazor.UnitTests.Docs.Generated
         [TearDown]
         public async Task TearDown()
         {
-            if (renderQueueService is not null)
-            {
-                await renderQueueService.WaitUntilEmpty();
-            }
+            await WaitForRenderQueueAsync();
 
             if (ctx is not null)
             {
@@ -103,7 +98,8 @@ namespace MudBlazor.UnitTests.Docs.Generated
 
         protected Task WaitForRenderQueueAsync()
         {
-            return renderQueueService.WaitUntilEmpty();
+            var queueService = ctx.Services.GetRequiredService<IRenderQueueService>();
+            return queueService.WaitUntilEmpty();
         }
     }
 }
