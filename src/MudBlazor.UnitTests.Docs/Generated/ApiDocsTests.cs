@@ -1,4 +1,7 @@
-﻿using AwesomeAssertions;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using AwesomeAssertions;
 using Bunit;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,38 +14,53 @@ using NUnit.Framework;
 namespace MudBlazor.UnitTests.Docs.Generated
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.All)]
+    [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     public partial class ApiDocsTests
     {
-        private Bunit.BunitContext ctx;
+        private static readonly ServiceDescriptor[] DefaultServices = CreateDefaultServices();
+        private BunitContext ctx;
+        private IRenderQueueService renderQueueService;
+
+        private static ServiceDescriptor[] CreateDefaultServices()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton(TimeProvider.System);
+            services.AddSingleton<IDialogService, DialogService>();
+            services.AddSingleton<ISnackbar, SnackbarService>();
+            services.AddSingleton<IBrowserViewportService, MockBrowserViewportService>();
+            services.AddTransient<IScrollManager, MockScrollManager>();
+            services.AddTransient<IScrollListenerFactory, MockScrollListenerFactory>();
+            services.AddTransient<IJsApiService, MockJsApiService>();
+            services.AddTransient<IDocsJsApiService, MockDocsJsApiService>();
+            services.AddTransient<IResizeObserverFactory, MockResizeObserverFactory>();
+            services.AddTransient<IScrollSpyFactory, MockScrollSpyFactory>();
+            services.AddTransient<IEventListenerFactory, MockEventListenerFactory>();
+            services.AddTransient<IEventListener, MockEventListener>();
+            services.AddSingleton<IDocsNavigationService, DocsNavigationService>();
+            services.AddSingleton<IMenuService, MenuService>();
+            services.AddSingleton<IPopoverService, MockPopoverService>();
+            services.AddSingleton<IKeyInterceptorService, MockKeyInterceptorService>();
+            services.AddTransient<IJsEventFactory, MockJsEventFactory>();
+            services.AddScoped<IRenderQueueService, RenderQueueService>();
+            services.AddScoped<IPointerEventsNoneService, MockPointerEventsNoneService>();
+            services.AddTransient<InternalMudLocalizer>();
+            services.AddTransient<ILocalizationInterceptor, DefaultLocalizationInterceptor>();
+            services.AddTransient<ILocalizationEnumInterceptor, DefaultLocalizationEnumInterceptor>();
+            services.AddScoped(sp => new HttpClient());
+            return services.ToArray();
+        }
 
         [SetUp]
         public void Setup()
         {
-            ctx = new Bunit.BunitContext();
+            ctx = new BunitContext();
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
-            ctx.Services.AddSingleton(TimeProvider.System);
-            ctx.Services.AddSingleton<IDialogService>(new DialogService());
-            ctx.Services.AddSingleton<ISnackbar, SnackbarService>();
-            ctx.Services.AddSingleton<IBrowserViewportService>(new MockBrowserViewportService());
-            ctx.Services.AddTransient<IScrollManager, MockScrollManager>();
-            ctx.Services.AddTransient<IScrollListenerFactory, MockScrollListenerFactory>();
-            ctx.Services.AddTransient<IJsApiService, MockJsApiService>();
-            ctx.Services.AddTransient<IDocsJsApiService, MockDocsJsApiService>();
-            ctx.Services.AddTransient<IResizeObserverFactory, MockResizeObserverFactory>();
-            ctx.Services.AddTransient<IScrollSpyFactory, MockScrollSpyFactory>();
-            ctx.Services.AddTransient<IEventListenerFactory, MockEventListenerFactory>();
-            ctx.Services.AddTransient<IEventListener, MockEventListener>();
-            ctx.Services.AddSingleton<IDocsNavigationService, DocsNavigationService>();
-            ctx.Services.AddSingleton<IMenuService, MenuService>();
-            ctx.Services.AddSingleton<IPopoverService, MockPopoverService>();
-            ctx.Services.AddSingleton<IKeyInterceptorService, MockKeyInterceptorService>();
-            ctx.Services.AddTransient<IJsEventFactory, MockJsEventFactory>();
-            ctx.Services.AddScoped<IRenderQueueService, RenderQueueService>();
-            ctx.Services.AddScoped<IPointerEventsNoneService, MockPointerEventsNoneService>();
-            ctx.Services.AddTransient<InternalMudLocalizer>();
-            ctx.Services.AddTransient<ILocalizationInterceptor, DefaultLocalizationInterceptor>();
-            ctx.Services.AddTransient<ILocalizationEnumInterceptor, DefaultLocalizationEnumInterceptor>();
-            ctx.Services.AddScoped(sp => new HttpClient());
+            foreach (var descriptor in DefaultServices)
+            {
+                ctx.Services.Add(descriptor);
+            }
+            renderQueueService = ctx.Services.GetRequiredService<IRenderQueueService>();
         }
 
         // This shows how to test a docs page with incremental rendering.
@@ -52,7 +70,7 @@ namespace MudBlazor.UnitTests.Docs.Generated
         {
             ctx.Services.AddSingleton<NavigationManager>(new MockNavigationManager("https://localhost:2112/", "https://localhost:2112/components/alert"));
             var comp = ctx.Render<MudBlazor.Docs.Pages.Components.Alert.AlertPage>();
-            await ctx.Services.GetService<IRenderQueueService>().WaitUntilEmpty();
+            await WaitForRenderQueueAsync();
         }
 
         /// <summary>
@@ -63,13 +81,29 @@ namespace MudBlazor.UnitTests.Docs.Generated
         {
             ctx.Services.AddSingleton<NavigationManager>(new MockNavigationManager("https://localhost:2112/", "https://localhost:2112/components/MudAlert"));
             var comp = ctx.Render<Api>(parameters => parameters.Add(x => x.TypeName, "MudAlert"));
-            await ctx.Services.GetService<IRenderQueueService>().WaitUntilEmpty();
+            await WaitForRenderQueueAsync();
             comp.Markup.Should().NotContain("Sorry, the type").And.NotContain("could not be found");
             var exampleLink = comp.FindComponents<MudLink>().FirstOrDefault(link => link.Instance.Href.StartsWith("/component"));
             exampleLink.Should().NotBeNull();
         }
 
         [TearDown]
-        public async Task TearDown() => await ctx.DisposeAsync();
+        public async Task TearDown()
+        {
+            if (renderQueueService is not null)
+            {
+                await renderQueueService.WaitUntilEmpty();
+            }
+
+            if (ctx is not null)
+            {
+                await ctx.DisposeAsync();
+            }
+        }
+
+        protected Task WaitForRenderQueueAsync()
+        {
+            return renderQueueService.WaitUntilEmpty();
+        }
     }
 }
