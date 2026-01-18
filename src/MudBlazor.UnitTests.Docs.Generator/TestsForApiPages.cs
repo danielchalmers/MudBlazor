@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Text.RegularExpressions;
 using MudBlazor.Charts;
 
@@ -134,7 +135,7 @@ public partial class TestsForApiPages
     /// <remarks>
     /// This list should match the types mentioned in the <c>MenuService</c> class in MudBlazor.Docs.
     /// </remarks>
-    public List<Type> TypesWithExamples =
+    public static List<Type> TypesWithExamples { get; } =
     [
         typeof(MudContainer), typeof(MudGrid), typeof(MudItem), typeof(MudHidden),  typeof(MudBreakpointProvider), typeof(MudChip<object>), typeof(MudChipSet<object>),
         typeof(MudBadge), typeof(MudAppBar), typeof(MudDrawer), typeof(MudDrawerHeader), typeof(MudDrawerContainer), typeof(MudDropZone<object>), typeof(MudDropContainer<object>),
@@ -156,6 +157,10 @@ public partial class TestsForApiPages
         typeof(MudToggleIconButton), typeof(MudFab), typeof(ChartOptions), typeof(Donut<>), typeof(Line<>), typeof(Legend<>), typeof(Pie<>), typeof(Bar<>), typeof(HeatMap<>),typeof(StackedBar<>),
         typeof(TimeSeries<>), typeof(Radar<>), typeof(Rose<>)
     ];
+
+    private static readonly HashSet<string> TypesWithExamplesLookup = new(
+        TypesWithExamples.Select(type => type.Name),
+        StringComparer.Ordinal);
 
     /// <summary>
     /// Ensures that an API page is available for each MudBlazor component.
@@ -183,6 +188,7 @@ public partial class TestsForApiPages
             cb.AddLine("using MudBlazor.Docs.Pages.Api;");
             cb.AddLine("using MudBlazor.Docs.Services;");
             cb.AddLine("using NUnit.Framework;");
+            cb.AddLine("using System.Threading.Tasks;");
             cb.AddLine();
             cb.AddLine("namespace MudBlazor.UnitTests.Docs.Generated");
             cb.AddLine("{");
@@ -236,7 +242,7 @@ public partial class TestsForApiPages
                 && !type.Name.Contains("Extensions")
                 // ... which aren't clone strategies
                 && !type.Name.Contains("SystemTextJson"))
-            .ToList();
+            .OrderBy(type => type.FullName, StringComparer.Ordinal);
         foreach (var type in mudBlazorComponents)
         {
             // Skip MudBlazor.Color and MudBlazor.Input types
@@ -252,11 +258,11 @@ public partial class TestsForApiPages
             // Create Api.razor with a type
             cb.AddLine(@$"ctx.Services.AddSingleton<NavigationManager>(new MockNavigationManager(""https://localhost:2112/"", ""https://localhost:2112/components/{type.Name}""));");
             cb.AddLine(@$"var comp = ctx.Render<Api>(parameters => parameters.Add(x => x.TypeName, ""{type.Name}""));");
-            cb.AddLine(@$"await ctx.Services.GetService<IRenderQueueService>().WaitUntilEmpty();");
+            cb.AddLine("await WaitForRenderQueueAsync();");
             // Make sure docs for the type were actually found
             cb.AddLine(@$"comp.Markup.Should().NotContain(""Sorry, the type {type.Name} was not found"");");
             // Should there be a link to the example page?
-            if (TypesWithExamples.Exists(exampleType => exampleType.Name == type.Name))
+            if (TypesWithExamplesLookup.Contains(type.Name))
             {
                 // Yes.  Check for the example link
                 cb.AddLine(@$"var exampleLink = comp.FindComponents<MudLink>().FirstOrDefault(link => link.Instance.Href != null && link.Instance.Href.StartsWith(""/component""));");
@@ -283,7 +289,7 @@ public partial class TestsForApiPages
             // Create Api.razor with a type
             cb.AddLine(@$"ctx.Services.AddSingleton<NavigationManager>(new MockNavigationManager(""https://localhost:2112/"", ""https://localhost:2112/components/{url}""));");
             cb.AddLine(@$"var comp = ctx.Render<Api>(parameters => parameters.Add(x => x.TypeName, ""{component}""));");
-            cb.AddLine(@$"await ctx.Services.GetService<IRenderQueueService>().WaitUntilEmpty();");
+            cb.AddLine("await WaitForRenderQueueAsync();");
             // Make sure docs for the type were actually found
             cb.AddLine(@$"comp.Markup.Should().NotContain(""Sorry, the type {component} was not found"");");
             cb.IndentLevel--;

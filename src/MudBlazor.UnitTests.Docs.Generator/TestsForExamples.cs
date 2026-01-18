@@ -21,6 +21,7 @@ public class TestsForExamples
             cb.AddLine("using MudBlazor.Docs.Examples;");
             cb.AddLine("using MudBlazor.Docs.Wireframes;");
             cb.AddLine("using NUnit.Framework;");
+            cb.AddLine("using System.Threading.Tasks;");
             cb.AddLine();
 
             cb.AddLine("namespace MudBlazor.UnitTests.Docs.Generated");
@@ -45,10 +46,10 @@ public class TestsForExamples
                 if (filename == "TableVirtualizationExample.razor" || filename == "DataGridVirtualizationExample.razor")
                     continue;
                 cb.AddLine("[Test]");
-                cb.AddLine($"public void {componentName}_Test()");
+                cb.AddLine($"public async Task {componentName}_Test()");
                 cb.AddLine("{");
                 cb.IndentLevel++;
-                cb.AddLine($"ctx.Render<{componentName}>();");
+                cb.AddLine($"await RenderExampleAsync<{componentName}>();");
                 cb.IndentLevel--;
                 cb.AddLine("}");
             }
