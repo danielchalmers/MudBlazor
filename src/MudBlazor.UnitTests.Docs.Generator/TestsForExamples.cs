@@ -18,6 +18,8 @@ public class TestsForExamples
             var cb = new CodeBuilder();
 
             cb.AddHeader();
+            cb.AddLine("using System;");
+            cb.AddLine("using System.Collections.Generic;");
             cb.AddLine("using MudBlazor.Docs.Examples;");
             cb.AddLine("using MudBlazor.Docs.Wireframes;");
             cb.AddLine("using NUnit.Framework;");
@@ -32,6 +34,25 @@ public class TestsForExamples
             cb.AddLine("{");
             cb.IndentLevel++;
 
+            cb.AddLine("private const string RunAllExamplesEnvironmentVariable = \"MUDBLAZOR_DOCS_RUN_ALL_EXAMPLES\";");
+            cb.AddLine("private static readonly HashSet<string> HeavyExamples = new(StringComparer.Ordinal)");
+            cb.AddLine("{");
+            cb.IndentLevel++;
+            cb.AddLine("\"TableVirtualizationExample\",");
+            cb.AddLine("\"DataGridVirtualizationExample\"");
+            cb.IndentLevel--;
+            cb.AddLine("};");
+            cb.AddLine();
+            cb.AddLine("private static bool RunAllExamples =>");
+            cb.IndentLevel++;
+            cb.AddLine("string.Equals(Environment.GetEnvironmentVariable(RunAllExamplesEnvironmentVariable), \"1\", StringComparison.OrdinalIgnoreCase)");
+            cb.AddLine("|| string.Equals(Environment.GetEnvironmentVariable(RunAllExamplesEnvironmentVariable), \"true\", StringComparison.OrdinalIgnoreCase);");
+            cb.IndentLevel--;
+            cb.AddLine();
+            cb.AddLine("public static IEnumerable<TestCaseData> ExampleCases()");
+            cb.AddLine("{");
+            cb.IndentLevel++;
+
             foreach (var entry in Directory.EnumerateFiles(Paths.DocsDirPath, "*.razor", SearchOption.AllDirectories)
                 .OrderBy(e => e.Replace("\\", "/"), StringComparer.Ordinal))
             {
@@ -41,17 +62,25 @@ public class TestsForExamples
                 var componentName = Path.GetFileNameWithoutExtension(filename);
                 if (!filename.Contains(Paths.ExampleDiscriminator))
                     continue;
-                // skip over table/data grid virtualization since it takes too long.
                 if (filename == "TableVirtualizationExample.razor" || filename == "DataGridVirtualizationExample.razor")
+                {
+                    cb.AddLine($"if (RunAllExamples) yield return new TestCaseData(typeof({componentName})).SetName(\"{componentName}_Test\");");
                     continue;
-                cb.AddLine("[Test]");
-                cb.AddLine($"public void {componentName}_Test()");
-                cb.AddLine("{");
-                cb.IndentLevel++;
-                cb.AddLine($"ctx.Render<{componentName}>();");
-                cb.IndentLevel--;
-                cb.AddLine("}");
+                }
+                cb.AddLine($"yield return new TestCaseData(typeof({componentName})).SetName(\"{componentName}_Test\");");
             }
+
+            cb.IndentLevel--;
+            cb.AddLine("}");
+            cb.AddLine();
+            cb.AddLine("[TestCaseSource(nameof(ExampleCases))]");
+            cb.AddLine("[Parallelizable(ParallelScope.All)]");
+            cb.AddLine("public void Example_Renders(Type componentType)");
+            cb.AddLine("{");
+            cb.IndentLevel++;
+            cb.AddLine("ctx.RenderComponent(componentType);");
+            cb.IndentLevel--;
+            cb.AddLine("}");
 
             cb.IndentLevel--;
             cb.AddLine("}");
