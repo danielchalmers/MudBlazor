@@ -12,12 +12,9 @@ namespace MudBlazor.UnitTests.Docs.Generated
     [TestFixture]
     public partial class ExampleDocsTests
     {
-        private BunitContext ctx;
-
-        [SetUp]
-        public void Setup()
+        protected static BunitContext CreateContext()
         {
-            ctx = new BunitContext();
+            var ctx = new BunitContext();
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.Services.AddSingleton(TimeProvider.System);
             ctx.Services.AddSingleton<NavigationManager>(new MockNavigationManager());
@@ -44,16 +41,7 @@ namespace MudBlazor.UnitTests.Docs.Generated
             ctx.Services.AddOptions();
             ctx.Services.AddScoped(sp =>
                 new HttpClient(new MockDocsMessageHandler()) { BaseAddress = new Uri("https://localhost/") });
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            try
-            {
-                ctx.Dispose();
-            }
-            catch (Exception) { /*ignore, may fail because of dispose in the middle of a (second) render pass*/ }
+            return ctx;
         }
     }
 }

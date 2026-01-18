@@ -13,12 +13,9 @@ namespace MudBlazor.UnitTests.Docs.Generated
     [TestFixture]
     public partial class ApiDocsTests
     {
-        private Bunit.BunitContext ctx;
-
-        [SetUp]
-        public void Setup()
+        protected static BunitContext CreateContext()
         {
-            ctx = new Bunit.BunitContext();
+            var ctx = new BunitContext();
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.Services.AddSingleton(TimeProvider.System);
             ctx.Services.AddSingleton<IDialogService>(new DialogService());
@@ -43,6 +40,7 @@ namespace MudBlazor.UnitTests.Docs.Generated
             ctx.Services.AddTransient<ILocalizationInterceptor, DefaultLocalizationInterceptor>();
             ctx.Services.AddTransient<ILocalizationEnumInterceptor, DefaultLocalizationEnumInterceptor>();
             ctx.Services.AddScoped(sp => new HttpClient());
+            return ctx;
         }
 
         // This shows how to test a docs page with incremental rendering.
@@ -50,9 +48,10 @@ namespace MudBlazor.UnitTests.Docs.Generated
         [Test]
         public async Task AlertPage_Test()
         {
+            await using var ctx = CreateContext();
             ctx.Services.AddSingleton<NavigationManager>(new MockNavigationManager("https://localhost:2112/", "https://localhost:2112/components/alert"));
-            var comp = ctx.Render<MudBlazor.Docs.Pages.Components.Alert.AlertPage>();
-            await ctx.Services.GetService<IRenderQueueService>().WaitUntilEmpty();
+            ctx.Render<MudBlazor.Docs.Pages.Components.Alert.AlertPage>();
+            await ctx.Services.GetRequiredService<IRenderQueueService>().WaitUntilEmpty();
         }
 
         /// <summary>
@@ -61,15 +60,13 @@ namespace MudBlazor.UnitTests.Docs.Generated
         [Test]
         public async Task MudAlert_API_Test_Example()
         {
+            await using var ctx = CreateContext();
             ctx.Services.AddSingleton<NavigationManager>(new MockNavigationManager("https://localhost:2112/", "https://localhost:2112/components/MudAlert"));
             var comp = ctx.Render<Api>(parameters => parameters.Add(x => x.TypeName, "MudAlert"));
-            await ctx.Services.GetService<IRenderQueueService>().WaitUntilEmpty();
+            await ctx.Services.GetRequiredService<IRenderQueueService>().WaitUntilEmpty();
             comp.Markup.Should().NotContain("Sorry, the type").And.NotContain("could not be found");
             var exampleLink = comp.FindComponents<MudLink>().FirstOrDefault(link => link.Instance.Href.StartsWith("/component"));
             exampleLink.Should().NotBeNull();
         }
-
-        [TearDown]
-        public async Task TearDown() => await ctx.DisposeAsync();
     }
 }

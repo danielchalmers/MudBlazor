@@ -6,6 +6,7 @@ namespace MudBlazor.UnitTests.Docs.Generator;
 
 public partial class TestsForApiPages
 {
+    private readonly record struct ApiTestCaseInfo(string TypeName, string Url, bool RequiresExampleLink);
     /// <summary>
     /// The current production links to API documentation.
     /// </summary>
@@ -173,6 +174,10 @@ public partial class TestsForApiPages
                 currentCode = File.ReadAllText(Paths.ApiPageTestsFilePath);
             }
 
+            var apiTestCases = new List<ApiTestCaseInfo>();
+            CollectPublicTypeTests(apiTestCases);
+            CollectLegacyApiLinkTests(apiTestCases);
+
             var cb = new CodeBuilder();
 
             cb.AddHeader();
@@ -182,6 +187,7 @@ public partial class TestsForApiPages
             cb.AddLine("using Microsoft.Extensions.DependencyInjection;");
             cb.AddLine("using MudBlazor.Docs.Pages.Api;");
             cb.AddLine("using MudBlazor.Docs.Services;");
+            cb.AddLine("using MudBlazor.Services;");
             cb.AddLine("using NUnit.Framework;");
             cb.AddLine();
             cb.AddLine("namespace MudBlazor.UnitTests.Docs.Generated");
@@ -193,8 +199,8 @@ public partial class TestsForApiPages
             cb.AddLine("{");
             cb.IndentLevel++;
 
-            WritePublicTypeTests(cb);
-            WriteLegacyApiLinkTests(cb);
+            WriteApiTestCases(cb, apiTestCases);
+            WriteApiTests(cb);
 
             cb.IndentLevel--;
             cb.AddLine("}");
@@ -218,7 +224,7 @@ public partial class TestsForApiPages
     /// <summary>
     /// Creates tests for all public MudBlazor types.
     /// </summary>
-    public void WritePublicTypeTests(CodeBuilder cb)
+    private void CollectPublicTypeTests(ICollection<ApiTestCaseInfo> apiTestCases)
     {
         var mudBlazorAssembly = typeof(_Imports).Assembly;
         var mudBlazorComponents = mudBlazorAssembly.GetTypes()
@@ -245,50 +251,64 @@ public partial class TestsForApiPages
                 continue;
             }
 
-            cb.AddLine("[Test]");
-            cb.AddLine($"public async Task {type.Name.Replace("`", "")}_API_TestAsync()");
-            cb.AddLine("{");
-            cb.IndentLevel++;
-            // Create Api.razor with a type
-            cb.AddLine(@$"ctx.Services.AddSingleton<NavigationManager>(new MockNavigationManager(""https://localhost:2112/"", ""https://localhost:2112/components/{type.Name}""));");
-            cb.AddLine(@$"var comp = ctx.Render<Api>(parameters => parameters.Add(x => x.TypeName, ""{type.Name}""));");
-            cb.AddLine(@$"await ctx.Services.GetService<IRenderQueueService>().WaitUntilEmpty();");
-            // Make sure docs for the type were actually found
-            cb.AddLine(@$"comp.Markup.Should().NotContain(""Sorry, the type {type.Name} was not found"");");
-            // Should there be a link to the example page?
-            if (TypesWithExamples.Exists(exampleType => exampleType.Name == type.Name))
-            {
-                // Yes.  Check for the example link
-                cb.AddLine(@$"var exampleLink = comp.FindComponents<MudLink>().FirstOrDefault(link => link.Instance.Href != null && link.Instance.Href.StartsWith(""/component""));");
-                cb.AddLine(@$"exampleLink.Should().NotBeNull();");
-            }
-            cb.IndentLevel--;
-            cb.AddLine("}");
+            apiTestCases.Add(new ApiTestCaseInfo(
+                type.Name,
+                $"components/{type.Name}",
+                TypesWithExamples.Exists(exampleType => exampleType.Name == type.Name)));
         }
     }
 
     /// <summary>
     /// Creates tests for existing API links (for backwards compatibility).
     /// </summary>
-    public void WriteLegacyApiLinkTests(CodeBuilder cb)
+    private void CollectLegacyApiLinkTests(ICollection<ApiTestCaseInfo> apiTestCases)
     {
         foreach (var url in _legacyApiAddresses)
         {
             var component = url.Replace("api/", "");
 
-            cb.AddLine("[Test]");
-            cb.AddLine($"public async Task {component.Replace("/", "_")}_Legacy_API_TestAsync()");
-            cb.AddLine("{");
-            cb.IndentLevel++;
-            // Create Api.razor with a type
-            cb.AddLine(@$"ctx.Services.AddSingleton<NavigationManager>(new MockNavigationManager(""https://localhost:2112/"", ""https://localhost:2112/components/{url}""));");
-            cb.AddLine(@$"var comp = ctx.Render<Api>(parameters => parameters.Add(x => x.TypeName, ""{component}""));");
-            cb.AddLine(@$"await ctx.Services.GetService<IRenderQueueService>().WaitUntilEmpty();");
-            // Make sure docs for the type were actually found
-            cb.AddLine(@$"comp.Markup.Should().NotContain(""Sorry, the type {component} was not found"");");
-            cb.IndentLevel--;
-            cb.AddLine("}");
+            apiTestCases.Add(new ApiTestCaseInfo(
+                component,
+                $"components/{url}",
+                false));
         }
+    }
+
+    private static void WriteApiTestCases(CodeBuilder cb, IEnumerable<ApiTestCaseInfo> apiTestCases)
+    {
+        cb.AddLine("private sealed record ApiTestCase(string TypeName, string Url, bool RequiresExampleLink);");
+        cb.AddLine("private static readonly ApiTestCase[] ApiTestCases =");
+        cb.AddLine("[");
+        cb.IndentLevel++;
+        foreach (var testCase in apiTestCases.OrderBy(testCase => testCase.Url, StringComparer.Ordinal))
+        {
+            cb.AddLine($@"new ApiTestCase(""{testCase.TypeName}"", ""{testCase.Url}"", {testCase.RequiresExampleLink.ToString().ToLowerInvariant()}),");
+        }
+        cb.IndentLevel--;
+        cb.AddLine("];");
+        cb.AddLine();
+    }
+
+    private static void WriteApiTests(CodeBuilder cb)
+    {
+        cb.AddLine("[TestCaseSource(nameof(ApiTestCases))]");
+        cb.AddLine("public async Task ApiPages_Render_Without_Errors(ApiTestCase testCase)");
+        cb.AddLine("{");
+        cb.IndentLevel++;
+        cb.AddLine("await using var ctx = CreateContext();");
+        cb.AddLine(@"ctx.Services.AddSingleton<NavigationManager>(new MockNavigationManager(""https://localhost:2112/"", $""https://localhost:2112/{testCase.Url}"" ));");
+        cb.AddLine("var comp = ctx.Render<Api>(parameters => parameters.Add(x => x.TypeName, testCase.TypeName));");
+        cb.AddLine("await ctx.Services.GetRequiredService<IRenderQueueService>().WaitUntilEmpty();");
+        cb.AddLine(@"comp.Markup.Should().NotContain($""Sorry, the type {testCase.TypeName} was not found"");");
+        cb.AddLine("if (testCase.RequiresExampleLink)");
+        cb.AddLine("{");
+        cb.IndentLevel++;
+        cb.AddLine(@"var exampleLink = comp.FindComponents<MudLink>().FirstOrDefault(link => link.Instance.Href != null && link.Instance.Href.StartsWith(""/component""));");
+        cb.AddLine("exampleLink.Should().NotBeNull();");
+        cb.IndentLevel--;
+        cb.AddLine("}");
+        cb.IndentLevel--;
+        cb.AddLine("}");
     }
 
     /// <summary>
