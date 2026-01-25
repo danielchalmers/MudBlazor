@@ -94,12 +94,13 @@
 }
 
 .docs-mobile-dialog-search {
-  height: 400px;
+  padding: 0;
+  gap: 12px;
 }
 
 .docs-mobile-dialog-search-popover {
   box-shadow: none !important;
-  margin-top: 8px;
+  margin-top: 0;
   background-color: var(--mud-palette-background-gray);
 
   .mud-list {

@@ -21,4 +21,9 @@ public interface IApiLinkService
     /// </summary>
     /// <param name="text">The search query</param>
     Task<IReadOnlyCollection<ApiLinkServiceEntry>> Search(string text);
+
+    /// <summary>
+    /// Returns all indexed entries.
+    /// </summary>
+    IReadOnlyCollection<ApiLinkServiceEntry> GetAllEntries();
 }
