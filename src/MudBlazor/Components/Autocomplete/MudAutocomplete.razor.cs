@@ -440,7 +440,6 @@ namespace MudBlazor
         [Category(CategoryTypes.FormComponent.ListBehavior)]
         public bool SelectValueOnTab { get; set; }
 
-        /// <summary>
         /// Additionally, opens the list when focus is received on the input element; otherwise only opens on click.
         /// </summary>
         /// <remarks>

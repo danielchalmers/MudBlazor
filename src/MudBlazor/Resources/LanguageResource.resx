@@ -336,6 +336,15 @@
   <data name="MudDialog_Close" xml:space="preserve">
     <value>Close</value>
   </data>
+  <data name="DocsSearch_Tooltip" xml:space="preserve">
+    <value>Search (Ctrl+K)</value>
+  </data>
+  <data name="DocsSearch_Placeholder" xml:space="preserve">
+    <value>Search docs (Ctrl+K)</value>
+  </data>
+  <data name="DocsSearch_DialogPlaceholder" xml:space="preserve">
+    <value>Search docs (Esc to close)</value>
+  </data>
   <data name="MudInput_Clear" xml:space="preserve">
     <value>Clear</value>
   </data>

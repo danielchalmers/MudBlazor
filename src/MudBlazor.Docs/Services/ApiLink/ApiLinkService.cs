@@ -65,6 +65,15 @@ namespace MudBlazor.Docs.Services
             );
         }
 
+        /// <inheritdoc />
+        public IReadOnlyCollection<ApiLinkServiceEntry> GetAllEntries()
+        {
+            return _entries.Values
+                .Distinct()
+                .OrderBy(entry => entry.Title)
+                .ToList();
+        }
+
         /// <summary>
         /// Returns a value representing the match ratio of the search input to the keyword.
         /// A higher ratio means a better match.
