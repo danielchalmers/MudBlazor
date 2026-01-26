@@ -3332,14 +3332,11 @@ namespace MudBlazor.UnitTests.Components
             var comp = Context.Render<DataGridHierarchyColumnTest>();
             var dataGrid = comp.FindComponent<MudDataGrid<DataGridHierarchyColumnTest.Model>>();
 
-            await comp.InvokeAsync(async () =>
-            {
-                var buttons = dataGrid.FindAll("button.mud-button-root.mud-icon-button.mud-ripple.mud-ripple-icon");
-                await buttons[10].ClickAsync();
+            var buttons = dataGrid.FindAll("button.mud-button-root.mud-icon-button.mud-ripple.mud-ripple-icon");
+            await buttons[10].ClickAsync();
 
-                dataGrid.FindAll("td")
+            dataGrid.FindAll("td")
                 .SingleOrDefault(x => x.TextContent.Trim().StartsWith("uid = Alicia|54|Info|")).Should().BeNull();
-            });
         }
 
         [Test]
@@ -3484,33 +3481,27 @@ namespace MudBlazor.UnitTests.Components
             var popoverProvider = comp.FindComponent<MudPopoverProvider>();
 
             dataGrid.FindAll(".mud-table-head th").Count.Should().Be(6);
-            await comp.InvokeAsync(async () =>
-            {
-                var columnHamburger = dataGrid.FindAll("button.mud-button-root.mud-icon-button.mud-ripple.mud-ripple-icon.mud-icon-button-size-small");
-                await columnHamburger[2].ClickAsync();
-                var listItems = popoverProvider.FindComponents<MudMenuItem>();
-                listItems.Count.Should().Be(2);
-                var clickablePopover = listItems[1].Find(".mud-menu-item");
-                await clickablePopover.ClickAsync();
-                ((IMudStateHasChanged)dataGrid.Instance).StateHasChanged();
-            });
+            var columnHamburger = dataGrid.FindAll("button.mud-button-root.mud-icon-button.mud-ripple.mud-ripple-icon.mud-icon-button-size-small");
+            await columnHamburger[2].ClickAsync();
+            var listItems = popoverProvider.FindComponents<MudMenuItem>();
+            listItems.Count.Should().Be(2);
+            var clickablePopover = listItems[1].Find(".mud-menu-item");
+            await clickablePopover.ClickAsync();
+            await comp.InvokeAsync(() => ((IMudStateHasChanged)dataGrid.Instance).StateHasChanged());
 
             await dataGrid.WaitForAssertionAsync(() =>
             {
                 dataGrid.FindAll(".mud-table-head th").Count.Should().Be(5);
             });
 
-            await comp.InvokeAsync(async () =>
-            {
-                var columnsButton = dataGrid.Find("button.mud-button-root.mud-icon-button.mud-ripple.mud-ripple-icon.mud-icon-button-size-small");
-                await columnsButton.ClickAsync();
-                var popover = dataGrid.FindComponent<MudPopover>();
-                popover.Instance.Open.Should().BeTrue("Should be open once clicked");
-                var listItems = popoverProvider.FindComponents<MudMenuItem>();
-                listItems.Count.Should().Be(1);
-                var clickablePopover = listItems[0].Find(".mud-menu-item");
-                await clickablePopover.ClickAsync();
-            });
+            var columnsButton = dataGrid.Find("button.mud-button-root.mud-icon-button.mud-ripple.mud-ripple-icon.mud-icon-button-size-small");
+            await columnsButton.ClickAsync();
+            var popover = dataGrid.FindComponent<MudPopover>();
+            popover.Instance.Open.Should().BeTrue("Should be open once clicked");
+            listItems = popoverProvider.FindComponents<MudMenuItem>();
+            listItems.Count.Should().Be(1);
+            clickablePopover = listItems[0].Find(".mud-menu-item");
+            await clickablePopover.ClickAsync();
 
             // Wait for switches, icons and buttons to appear
             await comp.WaitForAssertionAsync(async () =>

@@ -210,12 +210,12 @@ namespace MudBlazor.UnitTests.Components
             var inputs = comp.FindAll("input");
             inputs.Count.Should().Be(3);
             inputs[1].GetAttribute("value").Should().Be("Value2");
-            await inputs[1].TriggerEventAsync("onmousedown", new MouseEventArgs());
+            await inputs[1].MouseDownAsync(new MouseEventArgs());
             await Task.Delay(500);
             var listItems = comp.FindAll(".mud-list-item");
             foreach (var listItem in listItems)
             {
-                await listItem.TriggerEventAsync("onclick", new MouseEventArgs());
+                await listItem.ClickAsync(new MouseEventArgs());
             }
 
             inputs = comp.FindAll("input");
@@ -809,22 +809,16 @@ namespace MudBlazor.UnitTests.Components
             comp.FindAll(".mud-input-clear-button").Should().BeEmpty();
 
             // Open select
-            await comp.InvokeAsync(async () =>
-            {
-                var input = comp.Find("div.mud-input-control");
-                await input.MouseDownAsync();
-            });
+            var input = comp.Find("div.mud-input-control");
+            await input.MouseDownAsync();
 
             // Wait for items to render
             await comp.WaitForAssertionAsync(() =>
                 comp.FindAll("div.mud-list-item").Count.Should().BeGreaterThan(0));
 
             // Select second item
-            await comp.InvokeAsync(async () =>
-            {
-                var items = comp.FindAll("div.mud-list-item");
-                await items[1].ClickAsync();
-            });
+            var items = comp.FindAll("div.mud-list-item");
+            await items[1].ClickAsync();
 
             // Popover closes
             await comp.WaitForAssertionAsync(() =>
@@ -838,11 +832,8 @@ namespace MudBlazor.UnitTests.Components
             comp.FindAll(".mud-input-clear-button").Should().ContainSingle();
 
             // Click clear button
-            await comp.InvokeAsync(async () =>
-            {
-                var clearButton = comp.Find(".mud-input-clear-button");
-                await clearButton.ClickAsync();
-            });
+            var clearButton = comp.Find(".mud-input-clear-button");
+            await clearButton.ClickAsync();
 
             // Value cleared
             await comp.WaitForAssertionAsync(() =>
