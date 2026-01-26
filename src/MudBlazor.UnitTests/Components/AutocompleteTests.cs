@@ -133,11 +133,12 @@ namespace MudBlazor.UnitTests.Components
             var autocompleteContainerComp = comp.FindComponent<AutoCompleteContainer>();
             var autocompleteComp = autocompleteContainerComp.FindComponent<MudAutocomplete<string>>();
             await autocompleteComp.SetParametersAndRenderAsync(parameters => parameters.Add(a => a.Text, "Alabama"));
-            await Task.Delay(500);
+            await comp.WaitForAssertionAsync(() => autocompleteComp.Instance.Text.Should().Be("Alabama"));
             comp.Instance.MustBeShown = false;
             comp.Render();
-            await Task.Delay(1000);
-            comp.Instance.HasBeenDisposed.Should().Be(true);
+            await comp.WaitForAssertionAsync(
+                () => comp.Instance.HasBeenDisposed.Should().Be(true),
+                TimeSpan.FromSeconds(5));
         }
 
         /// <summary>
@@ -1448,10 +1449,7 @@ namespace MudBlazor.UnitTests.Components
 
             await comp.Find("input").InputAsync("Foo");
 
-            await Task.Delay(20);
-
-            // Test
-
+            await comp.WaitForAssertionAsync(() => cancelToken.Should().NotBeNull());
             await comp.WaitForAssertionAsync(() => cancelToken?.IsCancellationRequested.Should().BeFalse());
 
             // Arrange second call
@@ -1464,10 +1462,6 @@ namespace MudBlazor.UnitTests.Components
             })));
 
             await comp.Find("input").InputAsync("Bar");
-
-            await Task.Delay(20);
-
-            // Test
 
             await comp.WaitForAssertionAsync(() => cancelToken?.IsCancellationRequested.Should().BeTrue());
 
@@ -1574,8 +1568,6 @@ namespace MudBlazor.UnitTests.Components
             await autocompleteComponent.SetParametersAndRenderAsync(parameters => parameters.Add(p => p.SearchFunc, null));
 
             await comp.Find("input").InputAsync("Foo");
-
-            await Task.Delay(20);
 
             await comp.WaitForAssertionAsync(() => comp.Find("div.mud-popover").ToMarkup().Should().NotContain("Foo"));
         }
