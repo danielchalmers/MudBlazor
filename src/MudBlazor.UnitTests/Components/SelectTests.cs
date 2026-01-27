@@ -106,13 +106,12 @@ namespace MudBlazor.UnitTests.Components
             await Input().MouseDownAsync();
             menu.ClassList.Should().Contain("mud-popover-open");
             await comp.WaitForAssertionAsync(() => comp.FindAll("div.mud-list-item").Count.Should().BeGreaterThan(0));
-            IReadOnlyList<IElement> Items() => comp.FindAll("div.mud-list-item");
-            var items = Items();
+            var items = comp.FindAll("div.mud-list-item").ToArray();
             items[0].TextContent.Should().Be("Cardinale");
             items[1].TextContent.Should().Be("Diavolo");
             items[2].TextContent.Should().Be("Margarita");
             items[3].TextContent.Should().Be("Spinaci");
-            await Items()[2].ClickAsync();
+            await items[2].ClickAsync();
             Input().GetAttribute("value").Should().Be("Margarita");
         }
 
