@@ -1,4 +1,5 @@
-﻿using AwesomeAssertions;
+﻿using AngleSharp.Dom;
+using AwesomeAssertions;
 using Bunit;
 using Microsoft.AspNetCore.Components.Web;
 using MudBlazor.UnitTests.TestComponents.RadioGroup;
@@ -34,7 +35,7 @@ namespace MudBlazor.UnitTests.Components
             var comp = Context.Render<RadioGroupTest1>();
             // select elements needed for the test
             var group = comp.FindComponent<MudRadioGroup<string>>();
-            var inputs = comp.FindAll("input").ToArray();
+            IReadOnlyList<IElement> Inputs() => comp.FindAll("input");
 
             // check initial state
             group.Instance.Value.Should().Be(null);
@@ -42,28 +43,28 @@ namespace MudBlazor.UnitTests.Components
             comp.FindAll(".mud-radio > span.mud-icon-button")[1].ClassList.Should().NotContain("mud-checked");
             comp.FindAll(".mud-radio > span.mud-icon-button")[2].ClassList.Should().NotContain("mud-checked");
             // click radio 1
-            await inputs[0].ClickAsync();
+            await Inputs()[0].ClickAsync();
             group.Instance.Value.Should().Be("1");
 
             comp.FindAll(".mud-radio > span.mud-icon-button")[0].ClassList.Should().Contain("mud-checked");
             comp.FindAll(".mud-radio > span.mud-icon-button")[1].ClassList.Should().NotContain("mud-checked");
             comp.FindAll(".mud-radio > span.mud-icon-button")[2].ClassList.Should().NotContain("mud-checked");
             // click radio 2
-            await inputs[1].ClickAsync();
+            await Inputs()[1].ClickAsync();
             group.Instance.Value.Should().Be("2");
 
             comp.FindAll(".mud-radio > span.mud-icon-button")[0].ClassList.Should().NotContain("mud-checked");
             comp.FindAll(".mud-radio > span.mud-icon-button")[1].ClassList.Should().Contain("mud-checked");
             comp.FindAll(".mud-radio > span.mud-icon-button")[2].ClassList.Should().NotContain("mud-checked");
             // click radio 3
-            await inputs[2].ClickAsync();
+            await Inputs()[2].ClickAsync();
             group.Instance.Value.Should().Be("3");
 
             comp.FindAll(".mud-radio > span.mud-icon-button")[0].ClassList.Should().NotContain("mud-checked");
             comp.FindAll(".mud-radio > span.mud-icon-button")[1].ClassList.Should().NotContain("mud-checked");
             comp.FindAll(".mud-radio > span.mud-icon-button")[2].ClassList.Should().Contain("mud-checked");
             // click radio 1
-            await inputs[0].ClickAsync();
+            await Inputs()[0].ClickAsync();
             group.Instance.Value.Should().Be("1");
 
             comp.FindAll(".mud-radio > span.mud-icon-button")[0].ClassList.Should().Contain("mud-checked");
@@ -90,7 +91,7 @@ namespace MudBlazor.UnitTests.Components
             var comp = Context.Render<RadioGroupTest3>();
             // select elements needed for the test
             var groups = comp.FindComponents<MudRadioGroup<string>>();
-            var inputs = comp.FindAll("input").ToArray();
+            IReadOnlyList<IElement> Inputs() => comp.FindAll("input");
 
             // check initial state, should be initialized to second radio by default for both groups
             groups[0].Instance.Value.Should().Be("2");
@@ -100,7 +101,7 @@ namespace MudBlazor.UnitTests.Components
             comp.FindAll(".mud-radio > span.mud-icon-button")[2].ClassList.Should().NotContain("mud-checked");
             comp.FindAll(".mud-radio > span.mud-icon-button")[3].ClassList.Should().Contain("mud-checked");
             // click first radio of second group - they should both switch to L1
-            await inputs[2].ClickAsync();
+            await Inputs()[2].ClickAsync();
 
             groups[0].Instance.Value.Should().Be("1");
             groups[1].Instance.Value.Should().Be("1");
@@ -109,7 +110,7 @@ namespace MudBlazor.UnitTests.Components
             comp.FindAll(".mud-radio > span.mud-icon-button")[2].ClassList.Should().Contain("mud-checked");
             comp.FindAll(".mud-radio > span.mud-icon-button")[3].ClassList.Should().NotContain("mud-checked");
             // click second radio of first group - they should both switch to L1
-            await inputs[1].ClickAsync();
+            await Inputs()[1].ClickAsync();
 
             groups[0].Instance.Value.Should().Be("2");
             groups[1].Instance.Value.Should().Be("2");
@@ -204,10 +205,9 @@ namespace MudBlazor.UnitTests.Components
             var comp = Context.Render<RadioGroupTest5>();
             // select elements needed for the test
             var group = comp.FindComponent<MudRadioGroup<string>>();
-            var inputs = comp.FindAll("input").ToArray();
 
             //Value should change on radio click and bind after should fire
-            await inputs[1].ClickAsync();
+            await comp.FindAll("input")[1].ClickAsync();
             group.Instance.Value.Should().Be("2");
             comp.Instance.BindAfterCount.Should().Be(1);
 

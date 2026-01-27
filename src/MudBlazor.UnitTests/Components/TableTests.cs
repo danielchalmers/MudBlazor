@@ -32,16 +32,15 @@ namespace MudBlazor.UnitTests.Components
         {
             var comp = Context.Render<TableRowClickTest>();
             comp.Find("p").TextContent.Trim().Should().BeEmpty();
-            var trs = comp.FindAll("tr");
-            await trs[1].ClickAsync();
+            await comp.FindAll("tr")[1].ClickAsync();
             comp.Find("p").TextContent.Trim().Should().Be("0");
-            await trs[1].ClickAsync();
+            await comp.FindAll("tr")[1].ClickAsync();
             comp.Find("p").TextContent.Trim().Should().Be("0,0");
-            await trs[2].ClickAsync();
+            await comp.FindAll("tr")[2].ClickAsync();
             comp.Find("p").TextContent.Trim().Should().Be("0,0,1");
-            await trs[0].ClickAsync(); // clicking the header should add -1
+            await comp.FindAll("tr")[0].ClickAsync(); // clicking the header should add -1
             comp.Find("p").TextContent.Trim().Should().Be("0,0,1,-1");
-            await trs[4].ClickAsync(); // clicking the header should add 100
+            await comp.FindAll("tr")[4].ClickAsync(); // clicking the header should add 100
             comp.Find("p").TextContent.Trim().Should().Be("0,0,1,-1,100");
         }
 
@@ -54,24 +53,22 @@ namespace MudBlazor.UnitTests.Components
             var comp = Context.Render<TableRowHoverTest>();
             comp.Find("p").TextContent.Trim().Should().Be("Current: '', last: ''");
 
-            var trs = comp.FindAll("tr");
-
-            await trs[0].PointerEnterAsync(new PointerEventArgs());
+            await comp.FindAll("tr")[0].PointerEnterAsync(new PointerEventArgs());
             comp.Find("p").TextContent.Trim().Should().Be("Current: 'A', last: ''");
 
-            await trs[0].PointerLeaveAsync(new PointerEventArgs());
+            await comp.FindAll("tr")[0].PointerLeaveAsync(new PointerEventArgs());
             comp.Find("p").TextContent.Trim().Should().Be("Current: '', last: 'A'");
 
-            await trs[1].PointerEnterAsync(new PointerEventArgs());
+            await comp.FindAll("tr")[1].PointerEnterAsync(new PointerEventArgs());
             comp.Find("p").TextContent.Trim().Should().Be("Current: 'B', last: 'A'");
 
-            await trs[1].PointerLeaveAsync(new PointerEventArgs());
+            await comp.FindAll("tr")[1].PointerLeaveAsync(new PointerEventArgs());
             comp.Find("p").TextContent.Trim().Should().Be("Current: '', last: 'B'");
 
-            await trs[0].PointerEnterAsync(new PointerEventArgs());
+            await comp.FindAll("tr")[0].PointerEnterAsync(new PointerEventArgs());
             comp.Find("p").TextContent.Trim().Should().Be("Current: 'A', last: 'B'");
 
-            await trs[0].PointerLeaveAsync(new PointerEventArgs());
+            await comp.FindAll("tr")[0].PointerLeaveAsync(new PointerEventArgs());
             comp.Find("p").TextContent.Trim().Should().Be("Current: '', last: 'A'");
         }
 
@@ -334,15 +331,14 @@ namespace MudBlazor.UnitTests.Components
             var table = comp.FindComponent<MudTable<int?>>().Instance;
             table.SelectedItem.Should().BeNull();
             table.SelectedItems.Count.Should().Be(0);
-            var trs = comp.FindAll("tr");
             // Click on row 1 (index 0)
-            await trs[0].ClickAsync();
+            await comp.FindAll("tr")[0].ClickAsync();
             // Check SelectedItem and SelectedItems count
             table.SelectedItem.Should().Be(0);
             table.SelectedItems.Count.Should().Be(1);
             table.SelectedItems.First().Should().Be(0);
             // Repeat
-            await trs[2].ClickAsync();
+            await comp.FindAll("tr")[2].ClickAsync();
             table.SelectedItem.Should().Be(2);
             table.SelectedItems.Count.Should().Be(1);
             table.SelectedItems.First().Should().Be(2);
@@ -661,19 +657,19 @@ namespace MudBlazor.UnitTests.Components
         public async Task TableMultiSelection_CheckboxAndRowClick()
         {
             var comp = Context.Render<TableMultiSelection_CheckboxAndRowClickTest>();
-            var checkboxes = comp.FindComponent<MudTable<int>>().FindAll("input").ToArray();
             var table = comp.FindComponent<MudTable<int>>().Instance;
+            IReadOnlyList<IElement> Checkboxes() => comp.FindComponent<MudTable<int>>().FindAll("input");
 
-            foreach (var cbx in checkboxes)
+            for (var i = 0; i < Checkboxes().Count; i++)
             {
-                await cbx.ChangeAsync(true);
+                await Checkboxes()[i].ChangeAsync(true);
             }
 
             table.SelectedItems.Count.Should().Be(3);
 
-            foreach (var cbx in checkboxes)
+            for (var i = 0; i < Checkboxes().Count; i++)
             {
-                await cbx.ChangeAsync(false);
+                await Checkboxes()[i].ChangeAsync(false);
             }
             table.SelectedItems.Count.Should().Be(0);
         }
@@ -682,12 +678,12 @@ namespace MudBlazor.UnitTests.Components
         public async Task TableMultiSelection_IgnoreCheckbox_RowClick()
         {
             var comp = Context.Render<TableMultiSelection_IgnoreCheckbox_RowClickTest>();
-            var rows = comp.FindComponent<MudTable<int>>().FindAll("tr").ToArray();
             var table = comp.FindComponent<MudTable<int>>().Instance;
+            IReadOnlyList<IElement> Rows() => comp.FindComponent<MudTable<int>>().FindAll("tr");
 
-            foreach (var row in rows)
+            for (var i = 0; i < Rows().Count; i++)
             {
-                await row.ClickAsync();
+                await Rows()[i].ClickAsync();
             }
             table.SelectedItems.Count.Should().Be(0);
         }
@@ -1014,11 +1010,17 @@ namespace MudBlazor.UnitTests.Components
             // select elements needed for the test
             var tableComponent = comp.FindComponent<MudTable<TableGroupingTest.RacingCar>>();
             var table = tableComponent.Instance;
-            var rows = tableComponent.FindAll("tr").ToArray();
             var headerAndFooterCheckboxes = comp.FindComponents<MudCheckBox<bool?>>().Select(x => x.Instance).ToArray();
             var dataCheckboxes = comp.FindComponents<MudCheckBox<bool>>().Select(x => x.Instance).ToArray();
-            foreach (var row in rows.Where(el => el.ClassName.Contains("row-click-test"))) // simulate selection on row click, excluding headers and footer
-                await row.ClickAsync();
+            IReadOnlyList<IElement> Rows() => tableComponent.FindAll("tr");
+            for (var i = 0; i < Rows().Count; i++)
+            {
+                var row = Rows()[i];
+                if (row.ClassName.Contains("row-click-test")) // simulate selection on row click, excluding headers and footer
+                {
+                    await row.ClickAsync();
+                }
+            }
             // check result
             headerAndFooterCheckboxes.Sum(x => x.Disabled ? 0 : 1).Should().Be(0); // No checkbox should be enabled on header, group headers and footer
             dataCheckboxes.Sum(x => x.Disabled ? 1 : 0).Should().Be(comp.Instance.Items.Count()); // No checkbox should be enabled on rows
@@ -1082,10 +1084,10 @@ namespace MudBlazor.UnitTests.Components
             var checkboxes = comp.FindComponents<MudCheckBox<bool>>().Select(x => x.Instance).ToArray();
 
             // Skip first two inputs (date filters)
-            var inputs = comp.FindAll("input").Skip(3);
-            foreach (var input in inputs)
+            IReadOnlyList<IElement> Inputs() => comp.FindAll("input");
+            for (var i = 3; i < Inputs().Count; i++)
             {
-                await input.ChangeAsync(true);
+                await Inputs()[i].ChangeAsync(true);
             }
             table.SelectedItems.Count.Should().Be(10);
             comp.Find("p").TextContent.Should().Be("SelectedItems { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }");
@@ -1131,10 +1133,10 @@ namespace MudBlazor.UnitTests.Components
             var checkboxes = comp.FindComponents<MudCheckBox<bool>>().Select(x => x.Instance).ToArray();
 
             // Skip first two inputs (date filters)
-            var inputs = comp.FindAll("input").Skip(3);
-            foreach (var input in inputs)
+            IReadOnlyList<IElement> Inputs() => comp.FindAll("input");
+            for (var i = 3; i < Inputs().Count; i++)
             {
-                await input.ChangeAsync(true);
+                await Inputs()[i].ChangeAsync(true);
             }
             table.SelectedItems.Count.Should().Be(10);
             comp.Find("p").TextContent.Should().Be("SelectedItems { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }");
@@ -1147,7 +1149,7 @@ namespace MudBlazor.UnitTests.Components
             checkboxes = comp.FindComponents<MudCheckBox<bool>>().Select(x => x.Instance).ToArray();
 
             // Find checkboxes, and skip date filter and table header checkbox
-            inputs = comp.FindAll("input").Skip(3);
+            var inputs = comp.FindAll("input").Skip(3);
             inputs.Count().Should().Be(5); // one checkbox per row + one for the header + two date filters
             checkboxes.Sum(x => x.ReadValue ? 1 : 0).Should().Be(2);
             // Selection should remain intact
@@ -3074,4 +3076,3 @@ namespace MudBlazor.UnitTests.Components
 
     }
 }
-

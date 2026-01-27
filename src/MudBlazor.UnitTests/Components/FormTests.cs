@@ -1577,11 +1577,10 @@ namespace MudBlazor.UnitTests.Components
             comp.Instance.FormFieldChangedEventArgs.NewValue.Should().Be(1);
             numeric.Should().Be(comp.Instance.FormFieldChangedEventArgs.Field);
 
-            var inputs = comp.FindAll("input").ToArray();
             // check initial state
             radioGroup.Value.Should().Be(null);
             // click radio 1
-            await inputs[2].ClickAsync();
+            await comp.FindAll("input")[2].ClickAsync();
             radioGroup.Value.Should().Be("1");
             comp.Instance.FormFieldChangedEventArgs.NewValue.Should().Be("1");
             radioGroup.Should().Be(comp.Instance.FormFieldChangedEventArgs.Field);
