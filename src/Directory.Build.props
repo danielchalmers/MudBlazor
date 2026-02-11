@@ -15,6 +15,10 @@
   <PropertyGroup>
     <BunVersion>1.3.6</BunVersion>
     <BunDotNetVersion>1.2.0</BunDotNetVersion>
-    <BunWrapper>dotnet tool exec BunDotNet.Cli@$(BunDotNetVersion) --yes -- wrapper --version $(BunVersion) --path ../../tools --silent --</BunWrapper>
+    <!--
+      Use local tool-manifest resolution to keep BunDotNet.Cli runnable offline after an initial
+      `dotnet tool restore`. This avoids querying NuGet on every build as `dotnet tool exec` does.
+    -->
+    <BunWrapper>dotnet tool run BunDotNet.Cli -- wrapper --version $(BunVersion) --path ../../tools --silent --</BunWrapper>
   </PropertyGroup>
 </Project>
