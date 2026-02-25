@@ -4,7 +4,7 @@
  * Usage:
  *   bun run build.mjs
  * Or if you don't have bun installed:
- *   dotnet tool run bun -- wrapper -- run build.mjs
+ *   dotnet tool exec --tool-manifest ../../.config/dotnet-tools.json bun -- wrapper -- run build.mjs
  */
 
 import fs from "node:fs";
