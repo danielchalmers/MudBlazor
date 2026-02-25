@@ -4,7 +4,7 @@
  * Usage:
  *   bun run build.mjs
  * Or if you don't have bun installed:
- *   dotnet tool exec --tool-manifest ../../.config/dotnet-tools.json bun -- wrapper -- run build.mjs
+ *   dotnet tool exec bundotnet.cli -- wrapper -- run build.mjs
  *
  * Parameters:
  *   watch: Watch for changes and rebuild on change.

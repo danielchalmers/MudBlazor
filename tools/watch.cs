@@ -58,9 +58,7 @@ static async Task Run()
     [
         "tool",
         "exec",
-        "--tool-manifest",
-        "../../.config/dotnet-tools.json",
-        "bun",
+        "bundotnet.cli",
         "--",
         "wrapper",
         "--version",
