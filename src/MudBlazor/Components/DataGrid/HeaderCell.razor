@@ -106,11 +106,11 @@ else if (Column != null && !Column.HiddenState.Value)
                 {
                     if (hasFilter)
                     {
-                        <MudIconButton Class="filter-button filtered" Icon="@Column.GetResolvedFilterIcon(true)" Size="@Size.Small" OnClick="@OpenFilters" aria-label="@Localizer[LanguageResource.MudDataGrid_OpenFilters]"></MudIconButton>
+                        <MudIconButton Class="filter-button filtered" Icon="@Column.ResolvedFilterIconFilled" Size="@Size.Small" OnClick="@OpenFilters" aria-label="@Localizer[LanguageResource.MudDataGrid_OpenFilters]"></MudIconButton>
                     }
                     else if (showFilterIcon)
                     {
-                        <MudIconButton Class="filter-button" Icon="@Column.GetResolvedFilterIcon(false)" Size="@Size.Small" OnClick="@AddFilter" aria-label="@Localizer[LanguageResource.MudDataGrid_AddFilter]"></MudIconButton>
+                        <MudIconButton Class="filter-button" Icon="@Column.ResolvedFilterIconEmpty" Size="@Size.Small" OnClick="@AddFilter" aria-label="@Localizer[LanguageResource.MudDataGrid_AddFilter]"></MudIconButton>
                     }
                 }
 
@@ -141,7 +141,7 @@ else if (Column != null && !Column.HiddenState.Value)
                 }
                 @if (DataGrid.DragDropColumnReordering && (Column.DragAndDropEnabled ?? true))
                 {
-                    <MudIconButton Icon="@DataGrid.DragIndicatorIcon" Size="@DataGrid.DragIndicatorSize" Class="drag-icon-options"></MudIconButton>
+                    <MudIconButton Icon="@Column.ResolvedDragIndicatorIcon" Size="@DataGrid.DragIndicatorSize" Class="drag-icon-options"></MudIconButton>
                 }
             </span>
         </span>
