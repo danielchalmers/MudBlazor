@@ -626,10 +626,18 @@ namespace MudBlazor
         public bool ShowFilterIcons { get; set; } = true;
 
         /// <summary>
+        /// The filter icon shown on a column when <see cref="Filterable"/> is <c>true</c>.
+        /// </summary>
+        [Parameter]
+        [Category(CategoryTypes.DataGrid.Appearance)]
+        public string FilterIcon { get; set; } = Icons.Material.Filled.FilterAlt;
+
+        /// <summary>
         /// The empty filter icon shown on a column when <see cref="Filterable"/> is <c>true</c> and no filters are applied to this column.
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Use FilterIcon instead. Empty and filled filter states now share one icon.")]
         public string FilterIconEmpty { get; set; } = Icons.Material.Outlined.FilterAlt;
 
         /// <summary>
@@ -637,6 +645,7 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Use FilterIcon instead. Empty and filled filter states now share one icon.")]
         public string FilterIconFilled { get; set; } = Icons.Material.Filled.FilterAlt;
 
         /// <summary>
@@ -644,6 +653,14 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        public string FilterClearIcon { get; set; } = Icons.Material.Filled.FilterAltOff;
+
+        /// <summary>
+        /// The clear filter icon shown on a column when <see cref="Filterable"/> is <c>true</c> to remove filters applied to this column.
+        /// </summary>
+        [Parameter]
+        [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Use FilterClearIcon instead.")]
         public string FilterIconClear { get; set; } = Icons.Material.Filled.FilterAltOff;
 
         /// <summary>
@@ -651,6 +668,7 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("The simple filter remove icon is no longer customizable.")]
         public string FilterRemoveIcon { get; set; } = Icons.Material.Filled.Close;
 
         /// <summary>
@@ -658,6 +676,7 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("The toolbar menu icon is no longer customizable.")]
         public string ToolbarMenuIcon { get; set; } = Icons.Material.Outlined.Settings;
 
         /// <summary>
@@ -665,6 +684,7 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Columns panel icons are no longer customizable.")]
         public string ColumnsPanelSearchIcon { get; set; } = Icons.Material.Filled.Search;
 
         /// <summary>
@@ -672,6 +692,7 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Columns panel icons are no longer customizable.")]
         public string ColumnsPanelMoveUpIcon { get; set; } = Icons.Material.Filled.ArrowDropUp;
 
         /// <summary>
@@ -679,6 +700,7 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Columns panel icons are no longer customizable.")]
         public string ColumnsPanelMoveDownIcon { get; set; } = Icons.Material.Filled.ArrowDropDown;
 
         /// <summary>
@@ -686,6 +708,7 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Columns panel icons are no longer customizable.")]
         public string ColumnsPanelGroupIcon { get; set; } = Icons.Material.Filled.TableRows;
 
         /// <summary>
@@ -693,7 +716,25 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Columns panel icons are no longer customizable.")]
         public string ColumnsPanelUngroupIcon { get; set; } = Icons.Material.Filled.AccountTree;
+
+        internal string GetResolvedFilterIcon(bool filtered)
+        {
+#pragma warning disable CS0618
+            return FilterIcon ?? (filtered ? FilterIconFilled : FilterIconEmpty);
+#pragma warning restore CS0618
+        }
+
+        internal string ResolvedFilterClearIcon
+        {
+            get
+            {
+#pragma warning disable CS0618
+                return FilterClearIcon ?? FilterIconClear;
+#pragma warning restore CS0618
+            }
+        }
 
         /// <summary>
         /// The way that this grid filters data.

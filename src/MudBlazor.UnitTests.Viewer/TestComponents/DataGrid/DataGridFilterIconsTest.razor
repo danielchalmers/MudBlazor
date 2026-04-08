@@ -1,20 +1,15 @@
 <MudPopoverProvider />
 
 <MudDataGrid T="Model" Items="@_items" Filterable="true" FilterMode="FilterMode"
-             FilterIconEmpty="@Icons.Material.Filled.Battery0Bar" FilterIconFilled="@Icons.Material.Filled.BatteryFull" FilterIconClear="@Icons.Material.Filled.BatteryAlert"
-             FilterRemoveIcon="test_remove_filter_icon" ColumnOptionsIcon="test_column_options_icon"
-             ToolbarMenuIcon="test_toolbar_menu_icon" ColumnsPanelSearchIcon="test_columns_panel_search_icon"
-             ColumnsPanelMoveUpIcon="test_columns_panel_move_up_icon" ColumnsPanelMoveDownIcon="test_columns_panel_move_down_icon"
-             ColumnsPanelGroupIcon="test_columns_panel_group_icon" ColumnsPanelUngroupIcon="test_columns_panel_ungroup_icon"
+             FilterIcon="@Icons.Material.Filled.BatteryFull" FilterClearIcon="@Icons.Material.Filled.BatteryAlert"
+             ColumnOptionsIcon="test_column_options_icon" DragIndicatorIcon="test_grid_drag_indicator_icon"
              ShowMenuIcon="@ShowMenuIcon" ShowColumnOptions="@ShowColumnOptions" ColumnsPanelReordering="true" Groupable="true">
     <Columns>
         <PropertyColumn Property="x => x.Name" Grouping="true"
                         SortIcon="test_column_sort_icon"
-                        FilterIconEmpty="test_column_filter_empty_icon"
-                        FilterIconFilled="test_column_filter_filled_icon"
-                        FilterIconClear="test_column_filter_clear_icon"
-                        ColumnOptionsIcon="test_column_column_options_icon"
-                        DragIndicatorIcon="test_column_drag_indicator_icon" />
+                        FilterIcon="test_column_filter_icon"
+                        FilterClearIcon="test_column_filter_clear_icon"
+                        ColumnOptionsIcon="test_column_column_options_icon" />
         <PropertyColumn Property="x => x.Age" />
     </Columns>
 </MudDataGrid>

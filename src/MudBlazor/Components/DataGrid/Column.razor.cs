@@ -323,33 +323,56 @@ namespace MudBlazor
         public string? SortIcon { get; set; }
 
         /// <summary>
-        /// The empty filter icon shown when no filters are applied to this column.
+        /// The filter icon shown for this column.
         /// </summary>
         /// <remarks>
-        /// Defaults to <c>null</c>, which falls back to <see cref="MudDataGrid{T}.FilterIconEmpty"/>.
+        /// Defaults to <c>null</c>, which falls back to <see cref="MudDataGrid{T}.FilterIcon"/>.
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        public string? FilterIcon { get; set; }
+
+        /// <summary>
+        /// The empty filter icon shown when no filters are applied to this column.
+        /// </summary>
+        /// <remarks>
+        /// Use <see cref="FilterIcon"/> instead. Empty and filled filter states now share one icon.
+        /// </remarks>
+        [Parameter]
+        [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Use FilterIcon instead. Empty and filled filter states now share one icon.")]
         public string? FilterIconEmpty { get; set; }
 
         /// <summary>
         /// The filled filter icon shown when filters are applied to this column.
         /// </summary>
         /// <remarks>
-        /// Defaults to <c>null</c>, which falls back to <see cref="MudDataGrid{T}.FilterIconFilled"/>.
+        /// Use <see cref="FilterIcon"/> instead. Empty and filled filter states now share one icon.
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Use FilterIcon instead. Empty and filled filter states now share one icon.")]
         public string? FilterIconFilled { get; set; }
 
         /// <summary>
         /// The clear filter icon shown to remove this column's filter.
         /// </summary>
         /// <remarks>
-        /// Defaults to <c>null</c>, which falls back to <see cref="MudDataGrid{T}.FilterIconClear"/>.
+        /// Defaults to <c>null</c>, which falls back to <see cref="MudDataGrid{T}.FilterClearIcon"/>.
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        public string? FilterClearIcon { get; set; }
+
+        /// <summary>
+        /// The clear filter icon shown to remove this column's filter.
+        /// </summary>
+        /// <remarks>
+        /// Use <see cref="FilterClearIcon"/> instead.
+        /// </remarks>
+        [Parameter]
+        [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Use FilterClearIcon instead.")]
         public string? FilterIconClear { get; set; }
 
         /// <summary>
@@ -366,10 +389,11 @@ namespace MudBlazor
         /// The icon shown when this column is draggable.
         /// </summary>
         /// <remarks>
-        /// Defaults to <c>null</c>, which falls back to <see cref="MudDataGrid{T}.DragIndicatorIcon"/>.
+        /// Use <see cref="MudDataGrid{T}.DragIndicatorIcon"/> instead.
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Use MudDataGrid<T>.DragIndicatorIcon instead. Per-column drag icon overrides are no longer supported.")]
         public string? DragIndicatorIcon { get; set; }
 
         /// <summary>
@@ -630,15 +654,26 @@ namespace MudBlazor
 
         internal string? ResolvedSortIcon => SortIcon ?? DataGrid?.SortIcon;
 
-        internal string? ResolvedFilterIconEmpty => FilterIconEmpty ?? DataGrid?.FilterIconEmpty;
+        internal string? GetResolvedFilterIcon(bool filtered)
+        {
+#pragma warning disable CS0618
+            return FilterIcon
+                ?? (filtered ? FilterIconFilled : FilterIconEmpty)
+                ?? DataGrid?.GetResolvedFilterIcon(filtered);
+#pragma warning restore CS0618
+        }
 
-        internal string? ResolvedFilterIconFilled => FilterIconFilled ?? DataGrid?.FilterIconFilled;
-
-        internal string? ResolvedFilterIconClear => FilterIconClear ?? DataGrid?.FilterIconClear;
+        internal string? ResolvedFilterClearIcon
+        {
+            get
+            {
+#pragma warning disable CS0618
+                return FilterClearIcon ?? FilterIconClear ?? DataGrid?.ResolvedFilterClearIcon;
+#pragma warning restore CS0618
+            }
+        }
 
         internal string? ResolvedColumnOptionsIcon => ColumnOptionsIcon ?? DataGrid?.ColumnOptionsIcon;
-
-        internal string? ResolvedDragIndicatorIcon => DragIndicatorIcon ?? DataGrid?.DragIndicatorIcon;
 
         #endregion
 
