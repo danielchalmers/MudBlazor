@@ -320,6 +320,7 @@ namespace MudBlazor
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Column-level icon overrides were removed. Configure icon defaults on MudDataGrid instead.", true)]
         public string? SortIcon { get; set; }
 
         /// <summary>
@@ -330,6 +331,7 @@ namespace MudBlazor
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Column-level icon overrides were removed. Configure icon defaults on MudDataGrid instead.", true)]
         public string? FilterIconEmpty { get; set; }
 
         /// <summary>
@@ -340,6 +342,7 @@ namespace MudBlazor
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Column-level icon overrides were removed. Configure icon defaults on MudDataGrid instead.", true)]
         public string? FilterIconFilled { get; set; }
 
         /// <summary>
@@ -350,6 +353,7 @@ namespace MudBlazor
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Column-level icon overrides were removed. Configure icon defaults on MudDataGrid instead.", true)]
         public string? FilterIconClear { get; set; }
 
         /// <summary>
@@ -360,6 +364,7 @@ namespace MudBlazor
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Column-level icon overrides were removed. Configure icon defaults on MudDataGrid instead.", true)]
         public string? ColumnOptionsIcon { get; set; }
 
         /// <summary>
@@ -370,6 +375,7 @@ namespace MudBlazor
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Column-level icon overrides were removed. Configure icon defaults on MudDataGrid instead.", true)]
         public string? DragIndicatorIcon { get; set; }
 
         /// <summary>
@@ -628,17 +634,17 @@ namespace MudBlazor
             }
         }
 
-        internal string? ResolvedSortIcon => SortIcon ?? DataGrid?.SortIcon;
+        internal string? ResolvedSortIcon => DataGrid?.SortIcon;
 
-        internal string? ResolvedFilterIconEmpty => FilterIconEmpty ?? DataGrid?.FilterIconEmpty;
+        internal string? ResolvedFilterIconEmpty => DataGrid?.FilterIconEmpty;
 
-        internal string? ResolvedFilterIconFilled => FilterIconFilled ?? DataGrid?.FilterIconFilled;
+        internal string? ResolvedFilterIconFilled => DataGrid?.FilterIconFilled;
 
-        internal string? ResolvedFilterIconClear => FilterIconClear ?? DataGrid?.FilterIconClear;
+        internal string? ResolvedFilterIconClear => DataGrid?.FilterIconClear;
 
-        internal string? ResolvedColumnOptionsIcon => ColumnOptionsIcon ?? DataGrid?.ColumnOptionsIcon;
+        internal string? ResolvedColumnOptionsIcon => DataGrid?.ColumnOptionsIcon;
 
-        internal string? ResolvedDragIndicatorIcon => DragIndicatorIcon ?? DataGrid?.DragIndicatorIcon;
+        internal string? ResolvedDragIndicatorIcon => DataGrid?.DragIndicatorIcon;
 
         #endregion
 

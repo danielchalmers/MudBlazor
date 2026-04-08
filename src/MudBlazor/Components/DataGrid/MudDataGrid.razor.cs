@@ -472,7 +472,7 @@ namespace MudBlazor
         /// The icon shown when a column is sortable.
         /// </summary>
         /// <remarks>
-        /// Defaults to <see cref="Icons.Material.Filled.ArrowUpward"/>. Can be overridden for individual columns via <see cref="Column{T}.SortIcon"/>.
+        /// Defaults to <see cref="Icons.Material.Filled.ArrowUpward"/>.
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
@@ -651,6 +651,7 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Customization of the simple filter remove icon was removed.", true)]
         public string FilterRemoveIcon { get; set; } = Icons.Material.Filled.Close;
 
         /// <summary>
@@ -658,6 +659,7 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Customization of the toolbar menu icon was removed.", true)]
         public string ToolbarMenuIcon { get; set; } = Icons.Material.Outlined.Settings;
 
         /// <summary>
@@ -665,6 +667,7 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Customization of the columns panel search icon was removed.", true)]
         public string ColumnsPanelSearchIcon { get; set; } = Icons.Material.Filled.Search;
 
         /// <summary>
@@ -672,6 +675,7 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Customization of the columns panel reordering icons was removed.", true)]
         public string ColumnsPanelMoveUpIcon { get; set; } = Icons.Material.Filled.ArrowDropUp;
 
         /// <summary>
@@ -679,6 +683,7 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Customization of the columns panel reordering icons was removed.", true)]
         public string ColumnsPanelMoveDownIcon { get; set; } = Icons.Material.Filled.ArrowDropDown;
 
         /// <summary>
@@ -686,6 +691,7 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Customization of the columns panel grouping icons was removed.", true)]
         public string ColumnsPanelGroupIcon { get; set; } = Icons.Material.Filled.TableRows;
 
         /// <summary>
@@ -693,7 +699,22 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.DataGrid.Appearance)]
+        [Obsolete("Customization of the columns panel grouping icons was removed.", true)]
         public string ColumnsPanelUngroupIcon { get; set; } = Icons.Material.Filled.AccountTree;
+
+        internal string DefaultFilterRemoveIcon => Icons.Material.Filled.Close;
+
+        internal string DefaultToolbarMenuIcon => Icons.Material.Outlined.Settings;
+
+        internal string DefaultColumnsPanelSearchIcon => Icons.Material.Filled.Search;
+
+        internal string DefaultColumnsPanelMoveUpIcon => Icons.Material.Filled.ArrowDropUp;
+
+        internal string DefaultColumnsPanelMoveDownIcon => Icons.Material.Filled.ArrowDropDown;
+
+        internal string DefaultColumnsPanelGroupIcon => Icons.Material.Filled.TableRows;
+
+        internal string DefaultColumnsPanelUngroupIcon => Icons.Material.Filled.AccountTree;
 
         /// <summary>
         /// The way that this grid filters data.
