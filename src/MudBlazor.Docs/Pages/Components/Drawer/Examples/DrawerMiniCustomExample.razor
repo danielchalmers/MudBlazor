@@ -8,7 +8,7 @@
         <MudSpacer />
         <MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" Href="https://github.com/MudBlazor/MudBlazor" Target="_blank" />
     </MudAppBar>
-    <MudDrawer @bind-Open="@_open" ClipMode="_clipMode" Breakpoint="@_breakpoint" Elevation="1" Variant="@DrawerVariant.Mini" MiniVariantMode="@_miniVariantMode">
+    <MudDrawer @bind-Open="@_open" ClipMode="_clipMode" Breakpoint="@_breakpoint" Elevation="1" Variant="@DrawerVariant.Mini">
         <MudNavMenu>
             <MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Store">Store</MudNavLink>
             <MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.LibraryBooks">Library</MudNavLink>
@@ -28,10 +28,6 @@
                 <MudSelectItem Value="@Breakpoint.Lg">Breakpoint.Lg</MudSelectItem>
                 <MudSelectItem Value="@Breakpoint.Xl">Breakpoint.Xl</MudSelectItem>
             </MudSelect>
-            <MudSelect Label="Select mobile mini behavior" @bind-Value="_miniVariantMode">
-                <MudSelectItem Value="@DrawerMiniVariantMode.Compact">Compact mini rail</MudSelectItem>
-                <MudSelectItem Value="@DrawerMiniVariantMode.Temporary">Temporary overlay drawer</MudSelectItem>
-            </MudSelect>
             <MudSwitch @bind-Value="_dense" Label="Dense appbar" Color="Color.Primary" Style="width:100%;" />
         </MudContainer>
     </MudMainContent>
@@ -42,7 +38,6 @@
     private bool _dense = false;
     private Breakpoint _breakpoint = Breakpoint.Lg;
     private DrawerClipMode _clipMode = DrawerClipMode.Never;
-    private DrawerMiniVariantMode _miniVariantMode = DrawerMiniVariantMode.Compact;
 
     private void ToggleDrawer()
     {

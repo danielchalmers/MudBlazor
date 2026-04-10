@@ -2,7 +2,7 @@
     <MudAppBar Elevation="1">
         <MudIconButton id="toggle-drawer-button" Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
     </MudAppBar>
-    <MudDrawer @ref="@Drawer" @bind-Open="@_open" Elevation="1" Variant="@Variant" Breakpoint="@Breakpoint" ClipMode="@ClipMode" MiniVariantMode="@MiniVariantMode">
+    <MudDrawer @ref="@Drawer" @bind-Open="@_open" Elevation="1" Variant="@Variant" Breakpoint="@Breakpoint" ClipMode="@ClipMode">
     </MudDrawer>
     <MudMainContent Class="pt-16 px-16">
         <MudContainer Class="mt-6">
@@ -23,9 +23,6 @@
 
     [Parameter]
     public DrawerVariant Variant { get; set; } = DrawerVariant.Responsive;
-
-    [Parameter]
-    public DrawerMiniVariantMode MiniVariantMode { get; set; }
 
     private void ToggleDrawer() => _open = !_open;
 }

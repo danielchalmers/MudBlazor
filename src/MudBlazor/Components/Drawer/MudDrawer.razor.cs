@@ -150,7 +150,7 @@ namespace MudBlazor
         /// For responsive and temporary drawers, darkens the screen with an overlay when displaying this drawer.
         /// </summary>
         /// <remarks>
-        /// Defaults to <c>true</c>.  Applies when <see cref="Variant"/> is <see cref="DrawerVariant.Responsive"/> or <see cref="DrawerVariant.Temporary"/>, and when a mini drawer uses <see cref="DrawerMiniVariantMode.Temporary"/> below its breakpoint.
+        /// Defaults to <c>true</c>.  Applies when <see cref="Variant"/> is <see cref="DrawerVariant.Responsive"/> or <see cref="DrawerVariant.Temporary"/>, and when a mini drawer is below its breakpoint.
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.Drawer.Behavior)]
@@ -163,7 +163,7 @@ namespace MudBlazor
         /// If the <see cref="Variant"/> is set to <see cref="DrawerVariant.Temporary"/>, an overlay will be displayed. 
         /// When this property is <c>true</c>, clicking on the overlay will close it automatically. 
         /// When this property is <c>false</c>, the overlay will not close automatically.
-        /// Defaults to <c>true</c>.  Also applies when a mini drawer uses <see cref="DrawerMiniVariantMode.Temporary"/> below its breakpoint.
+        /// Defaults to <c>true</c>.  Also applies when a mini drawer is below its breakpoint.
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.Drawer.Behavior)]
@@ -173,21 +173,11 @@ namespace MudBlazor
         /// For mini drawers, opens this drawer when the pointer hovers over it.
         /// </summary>
         /// <remarks>
-        /// Defaults to <c>false</c>.  Applies when <see cref="Variant" /> is set to <see cref="DrawerVariant.Mini" /> and the drawer is not acting as temporary below its breakpoint.
+        /// Defaults to <c>false</c>.  Applies when <see cref="Variant" /> is set to <see cref="DrawerVariant.Mini" /> and the drawer is not below its breakpoint.
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.Drawer.Behavior)]
         public bool OpenMiniOnHover { get; set; }
-
-        /// <summary>
-        /// Controls how a mini drawer behaves below its breakpoint.
-        /// </summary>
-        /// <remarks>
-        /// Defaults to <see cref="DrawerMiniVariantMode.Compact"/>.  When set to <see cref="DrawerMiniVariantMode.Temporary"/>, a <see cref="DrawerVariant.Mini"/> drawer behaves like a <see cref="DrawerVariant.Temporary"/> drawer below <see cref="Breakpoint"/>.
-        /// </remarks>
-        [Parameter]
-        [Category(CategoryTypes.Drawer.Behavior)]
-        public DrawerMiniVariantMode MiniVariantMode { get; set; } = DrawerMiniVariantMode.Compact;
 
         /// <summary>
         /// The browser width at which responsive drawers are hidden.
@@ -416,12 +406,10 @@ namespace MudBlazor
 
         private bool HasResponsiveBreakpointBehavior() => Variant is DrawerVariant.Responsive or DrawerVariant.Mini;
 
-        private bool SupportsTemporaryMiniVariant() => Variant == DrawerVariant.Mini &&
-                                                      MiniVariantMode == DrawerMiniVariantMode.Temporary &&
-                                                      Breakpoint is not Breakpoint.None &&
-                                                      Breakpoint is not Breakpoint.Always;
-
-        private bool IsTemporaryMiniVariantBelowBreakpoint(Breakpoint breakpoint) => SupportsTemporaryMiniVariant() && IsBelowBreakpoint(breakpoint);
+        private bool IsTemporaryMiniVariantBelowBreakpoint(Breakpoint breakpoint) => Variant == DrawerVariant.Mini &&
+                                                                                    Breakpoint is not Breakpoint.None &&
+                                                                                    Breakpoint is not Breakpoint.Always &&
+                                                                                    IsBelowBreakpoint(breakpoint);
 
         internal DrawerVariant GetCurrentVariant() => IsTemporaryMiniVariantBelowBreakpoint(_lastUpdatedBreakpoint) ? DrawerVariant.Temporary : Variant;
 
