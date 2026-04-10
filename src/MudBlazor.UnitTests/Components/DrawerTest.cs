@@ -205,6 +205,58 @@ namespace MudBlazor.UnitTests.Components
         }
 
         [Test]
+        public async Task MiniSmallClosed_Open_CheckOpenedAndOverlayAsync()
+        {
+            _ = AddBrowserViewportService(BreakpointBrowserAssociatedSize(Breakpoint.Xs));
+            var comp = Context.Render<DrawerTest1>(parameters => parameters
+                .Add(x => x.Variant, DrawerVariant.Mini)
+                .Add(x => x.Breakpoint, Breakpoint.Md));
+
+            await comp.Find("#toggle-drawer-button").ClickAsync();
+            comp.FindAll("aside.mud-drawer--open.mud-drawer-mini").Count.Should().Be(1);
+            comp.FindAll(".mud-drawer-overlay").Count.Should().Be(1);
+            comp.Instance.Drawer.Open.Should().BeTrue();
+        }
+
+        [Test]
+        public async Task MiniTemporaryModeSmallClosed_Open_CheckTemporaryAndOverlayAsync()
+        {
+            _ = AddBrowserViewportService(BreakpointBrowserAssociatedSize(Breakpoint.Xs));
+            var comp = Context.Render<DrawerTest1>(parameters => parameters
+                .Add(x => x.Variant, DrawerVariant.Mini)
+                .Add(x => x.Breakpoint, Breakpoint.Md)
+                .Add(x => x.MiniVariantMode, DrawerMiniVariantMode.Temporary));
+
+            await comp.Find("#toggle-drawer-button").ClickAsync();
+            comp.FindAll("aside.mud-drawer--open.mud-drawer-temporary").Count.Should().Be(1);
+            comp.FindAll("aside.mud-drawer-mini").Count.Should().Be(0);
+            comp.FindAll(".mud-drawer-overlay").Count.Should().Be(1);
+            comp.Instance.Drawer.Open.Should().BeTrue();
+
+            await comp.Find("#toggle-drawer-button").ClickAsync();
+            comp.FindAll("aside.mud-drawer--closed.mud-drawer-temporary").Count.Should().Be(1);
+            comp.FindAll("aside.mud-drawer-mini").Count.Should().Be(0);
+            comp.Instance.Drawer.Open.Should().BeFalse();
+        }
+
+        [Test]
+        public void MiniTemporaryModeSmallScreen_UsesTemporaryContainerClasses()
+        {
+            _ = AddBrowserViewportService(BreakpointBrowserAssociatedSize(Breakpoint.Xs));
+            var comp = Context.Render<DrawerResponsiveTest>(parameters => parameters
+                .Add(x => x.Variant, DrawerVariant.Mini)
+                .Add(x => x.Breakpoint, Breakpoint.Md)
+                .Add(x => x.MiniVariantMode, DrawerMiniVariantMode.Temporary));
+
+            comp.WaitForAssertion(() =>
+            {
+                var layout = comp.Find("div.mud-layout");
+                layout.ClassList.Should().Contain("mud-drawer-close-temporary-md-left");
+                layout.ClassList.Should().NotContain("mud-drawer-close-mini-md-left");
+            });
+        }
+
+        [Test]
         public async Task ResponsiveClosed_Open_CheckOpened_Close_CheckClosedAsync()
         {
             _ = AddBrowserViewportService();

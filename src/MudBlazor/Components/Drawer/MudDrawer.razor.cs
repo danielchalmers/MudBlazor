@@ -43,7 +43,7 @@ namespace MudBlazor
                 .WithChangeHandler(OnRightToLeftParameterChanged);
         }
 
-        private bool OverlayVisible => _openState.Value && Overlay && (Variant == DrawerVariant.Temporary || (IsBelowCurrentBreakpoint() && IsResponsiveOrMini()));
+        private bool OverlayVisible => _openState.Value && Overlay && (GetCurrentVariant() == DrawerVariant.Temporary || (IsBelowCurrentBreakpoint() && HasResponsiveBreakpointBehavior()));
 
         protected string Classname =>
             new CssBuilder("mud-drawer")
@@ -56,7 +56,7 @@ namespace MudBlazor
                 .AddClass($"mud-drawer-clipped-{ClipMode.ToStringFast(true)}")
                 .AddClass($"mud-theme-{Color.ToStringFast(true)}", Color != Color.Default)
                 .AddClass($"mud-elevation-{Elevation}")
-                .AddClass($"mud-drawer-{Variant.ToStringFast(true)}")
+                .AddClass($"mud-drawer-{GetCurrentVariant().ToStringFast(true)}")
                 .AddClass(Class)
                 .Build();
 
@@ -64,7 +64,7 @@ namespace MudBlazor
             new CssBuilder("mud-drawer-overlay mud-overlay-drawer")
                 .AddClass($"mud-drawer-pos-{GetPosition()}")
                 .AddClass($"mud-drawer-overlay--open", _openState.Value)
-                .AddClass($"mud-drawer-overlay-{Variant.ToStringFast(true)}")
+                .AddClass($"mud-drawer-overlay-{GetCurrentVariant().ToStringFast(true)}")
                 .AddClass($"mud-drawer-overlay-{Breakpoint.ToStringFast(true)}")
                 .AddClass($"mud-drawer-overlay--initial", _initial)
                 .AddClass($"mud-skip-overlay-positioning") // popovers try to position the overlay by zindex, this skips that behavior
@@ -73,7 +73,7 @@ namespace MudBlazor
 
         protected string Stylename =>
             new StyleBuilder()
-                .AddStyle("--mud-drawer-width", Width, !string.IsNullOrWhiteSpace(Width) && (!IsFixed || Variant == DrawerVariant.Temporary))
+                .AddStyle("--mud-drawer-width", Width, !string.IsNullOrWhiteSpace(Width) && (!IsFixed || GetCurrentVariant() == DrawerVariant.Temporary))
                 .AddStyle("height", Height, !string.IsNullOrWhiteSpace(Height))
                 .AddStyle("--mud-drawer-height", string.IsNullOrWhiteSpace(Height) ? _height.ToPx() : Height, Anchor == Anchor.Bottom || Anchor == Anchor.Top)
                 .AddStyle("visibility", "hidden", string.IsNullOrWhiteSpace(Height) && _height == 0 && Anchor is Anchor.Bottom or Anchor.Top)
@@ -150,7 +150,7 @@ namespace MudBlazor
         /// For responsive and temporary drawers, darkens the screen with an overlay when displaying this drawer.
         /// </summary>
         /// <remarks>
-        /// Defaults to <c>true</c>.  Applies when <see cref="Variant"/> is <see cref="DrawerVariant.Responsive"/> or <see cref="DrawerVariant.Temporary"/>.
+        /// Defaults to <c>true</c>.  Applies when <see cref="Variant"/> is <see cref="DrawerVariant.Responsive"/> or <see cref="DrawerVariant.Temporary"/>, and when a mini drawer uses <see cref="DrawerMiniVariantMode.Temporary"/> below its breakpoint.
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.Drawer.Behavior)]
@@ -163,7 +163,7 @@ namespace MudBlazor
         /// If the <see cref="Variant"/> is set to <see cref="DrawerVariant.Temporary"/>, an overlay will be displayed. 
         /// When this property is <c>true</c>, clicking on the overlay will close it automatically. 
         /// When this property is <c>false</c>, the overlay will not close automatically.
-        /// Defaults to <c>true</c>.
+        /// Defaults to <c>true</c>.  Also applies when a mini drawer uses <see cref="DrawerMiniVariantMode.Temporary"/> below its breakpoint.
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.Drawer.Behavior)]
@@ -173,11 +173,21 @@ namespace MudBlazor
         /// For mini drawers, opens this drawer when the pointer hovers over it.
         /// </summary>
         /// <remarks>
-        /// Defaults to <c>false</c>.  Applies when <see cref="Variant" /> is set to <see cref="DrawerVariant.Mini" />.
+        /// Defaults to <c>false</c>.  Applies when <see cref="Variant" /> is set to <see cref="DrawerVariant.Mini" /> and the drawer is not acting as temporary below its breakpoint.
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.Drawer.Behavior)]
         public bool OpenMiniOnHover { get; set; }
+
+        /// <summary>
+        /// Controls how a mini drawer behaves below its breakpoint.
+        /// </summary>
+        /// <remarks>
+        /// Defaults to <see cref="DrawerMiniVariantMode.Compact"/>.  When set to <see cref="DrawerMiniVariantMode.Temporary"/>, a <see cref="DrawerVariant.Mini"/> drawer behaves like a <see cref="DrawerVariant.Temporary"/> drawer below <see cref="Breakpoint"/>.
+        /// </remarks>
+        [Parameter]
+        [Category(CategoryTypes.Drawer.Behavior)]
+        public DrawerMiniVariantMode MiniVariantMode { get; set; } = DrawerMiniVariantMode.Compact;
 
         /// <summary>
         /// The browser width at which responsive drawers are hidden.
@@ -397,11 +407,20 @@ namespace MudBlazor
 
         private bool IsBelowBreakpoint(Breakpoint breakpoint) => breakpoint < NormalizeBreakpoint(Breakpoint);
 
-        private bool IsResponsiveOrMini() => Variant is DrawerVariant.Responsive or DrawerVariant.Mini;
+        private bool HasResponsiveBreakpointBehavior() => Variant is DrawerVariant.Responsive or DrawerVariant.Mini;
 
-        private bool ShouldCloseDrawer(Breakpoint breakpoint) => IsResponsiveOrMini() && (Breakpoint == Breakpoint.None || (IsBelowBreakpoint(breakpoint) && !IsBelowCurrentBreakpoint()));
+        private bool SupportsTemporaryMiniVariant() => Variant == DrawerVariant.Mini &&
+                                                      MiniVariantMode == DrawerMiniVariantMode.Temporary &&
+                                                      Breakpoint is not Breakpoint.None &&
+                                                      Breakpoint is not Breakpoint.Always;
 
-        private bool ShouldOpenDrawer(Breakpoint breakpoint) => IsResponsiveOrMini() && (Breakpoint == Breakpoint.Always || (!IsBelowBreakpoint(breakpoint) && IsBelowCurrentBreakpoint()));
+        private bool IsTemporaryMiniVariantBelowBreakpoint(Breakpoint breakpoint) => SupportsTemporaryMiniVariant() && IsBelowBreakpoint(breakpoint);
+
+        internal DrawerVariant GetCurrentVariant() => IsTemporaryMiniVariantBelowBreakpoint(_lastUpdatedBreakpoint) ? DrawerVariant.Temporary : Variant;
+
+        private bool ShouldCloseDrawer(Breakpoint breakpoint) => HasResponsiveBreakpointBehavior() && (Breakpoint == Breakpoint.None || (IsBelowBreakpoint(breakpoint) && !IsBelowCurrentBreakpoint()));
+
+        private bool ShouldOpenDrawer(Breakpoint breakpoint) => HasResponsiveBreakpointBehavior() && (Breakpoint == Breakpoint.Always || (!IsBelowBreakpoint(breakpoint) && IsBelowCurrentBreakpoint()));
 
         internal string GetPosition()
         {
@@ -417,7 +436,7 @@ namespace MudBlazor
 
         private async Task OnPointerEnterAsync()
         {
-            if (Variant == DrawerVariant.Mini && !_openState.Value && OpenMiniOnHover)
+            if (GetCurrentVariant() == DrawerVariant.Mini && !_openState.Value && OpenMiniOnHover)
             {
                 _closeOnPointerLeave = true;
                 await _openState.SetValueAsync(true);
@@ -426,7 +445,7 @@ namespace MudBlazor
 
         private async Task OnPointerLeaveAsync()
         {
-            if (Variant == DrawerVariant.Mini && _openState.Value && _closeOnPointerLeave)
+            if (GetCurrentVariant() == DrawerVariant.Mini && _openState.Value && _closeOnPointerLeave)
             {
                 _closeOnPointerLeave = false;
                 await _openState.SetValueAsync(false);
@@ -435,8 +454,10 @@ namespace MudBlazor
 
         async Task INavigationEventReceiver.OnNavigation()
         {
+            var currentBreakpoint = await BrowserViewportService.GetCurrentBreakpointAsync();
             if (Variant == DrawerVariant.Temporary ||
-                (Variant == DrawerVariant.Responsive && await BrowserViewportService.GetCurrentBreakpointAsync() < Breakpoint))
+                (Variant == DrawerVariant.Responsive && currentBreakpoint < Breakpoint) ||
+                IsTemporaryMiniVariantBelowBreakpoint(currentBreakpoint))
             {
                 await _openState.SetValueAsync(false);
             }
@@ -455,7 +476,7 @@ namespace MudBlazor
             if (browserViewportEventArgs.IsImmediate)
             {
                 _lastUpdatedBreakpoint = browserViewportEventArgs.Breakpoint;
-                if (!IsResponsiveOrMini())
+                if (!HasResponsiveBreakpointBehavior())
                 {
                     return;
                 }

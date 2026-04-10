@@ -1,4 +1,4 @@
-﻿<MudDrawer @ref="@Drawer" @bind-Open="@_open" Variant="@Variant" Overlay="@Overlay" OverlayAutoClose="@OverlayAutoClose" ClipMode="@ClipMode"></MudDrawer>
+<MudDrawer @ref="@Drawer" @bind-Open="@_open" Variant="@Variant" Overlay="@Overlay" OverlayAutoClose="@OverlayAutoClose" ClipMode="@ClipMode" Breakpoint="@Breakpoint" MiniVariantMode="@MiniVariantMode"></MudDrawer>
 <button id="toggle-drawer-button" @onclick="@HandleButtonClick">toggle open</button>
 
 @code {
@@ -17,6 +17,12 @@
 
     [Parameter]
     public bool OverlayAutoClose { get; set; } = true;
+
+    [Parameter]
+    public Breakpoint Breakpoint { get; set; } = Breakpoint.Md;
+
+    [Parameter]
+    public DrawerMiniVariantMode MiniVariantMode { get; set; }
 
     private void HandleButtonClick() => _open = !_open;
 }
