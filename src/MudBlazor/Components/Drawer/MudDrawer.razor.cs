@@ -384,6 +384,7 @@ namespace MudBlazor
                 breakpoint = await BrowserViewportService.GetCurrentBreakpointAsync();
             }
 
+            var previousVariant = GetCurrentVariant();
             var isStateChanged = false;
             if (ShouldCloseDrawer(breakpoint))
             {
@@ -397,7 +398,13 @@ namespace MudBlazor
             }
 
             _lastUpdatedBreakpoint = breakpoint;
-            if (isStateChanged)
+            var variantChanged = previousVariant != GetCurrentVariant();
+            if (variantChanged)
+            {
+                DrawerContainerUpdate();
+            }
+
+            if (isStateChanged || variantChanged)
             {
                 await InvokeAsync(StateHasChanged);
             }
@@ -475,7 +482,9 @@ namespace MudBlazor
         {
             if (browserViewportEventArgs.IsImmediate)
             {
+                var previousVariant = GetCurrentVariant();
                 _lastUpdatedBreakpoint = browserViewportEventArgs.Breakpoint;
+                var variantChanged = previousVariant != GetCurrentVariant();
                 if (!HasResponsiveBreakpointBehavior())
                 {
                     return;
@@ -492,6 +501,12 @@ namespace MudBlazor
                 else if (HandleBelowBreakpointAndOpenState())
                 {
                     await InitialOpenState(false);
+                }
+
+                if (variantChanged)
+                {
+                    DrawerContainerUpdate();
+                    await InvokeAsync(StateHasChanged);
                 }
 
                 return;
