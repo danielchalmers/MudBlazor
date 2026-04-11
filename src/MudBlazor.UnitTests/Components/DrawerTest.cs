@@ -205,6 +205,23 @@ namespace MudBlazor.UnitTests.Components
         }
 
         [Test]
+        public async Task MiniOnSmallScreens_BehavesLikeTemporaryDrawer()
+        {
+            _ = AddBrowserViewportService(BreakpointBrowserAssociatedSize(Breakpoint.Xs));
+            var comp = Context.Render<DrawerTest1>(parameters => parameters
+                .Add(x => x.Variant, DrawerVariant.Mini));
+
+            await comp.Find("#toggle-drawer-button").ClickAsync();
+            comp.FindAll("aside.mud-drawer--open.mud-drawer-temporary").Count.Should().Be(1);
+            comp.FindAll(".mud-drawer-overlay").Count.Should().Be(1);
+            comp.Instance.Drawer.Open.Should().BeTrue();
+
+            await comp.Find("#toggle-drawer-button").ClickAsync();
+            comp.FindAll("aside.mud-drawer--closed.mud-drawer-temporary").Count.Should().Be(1);
+            comp.Instance.Drawer.Open.Should().BeFalse();
+        }
+
+        [Test]
         public async Task ResponsiveClosed_Open_CheckOpened_Close_CheckClosedAsync()
         {
             _ = AddBrowserViewportService();

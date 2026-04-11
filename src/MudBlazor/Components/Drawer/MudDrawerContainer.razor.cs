@@ -68,8 +68,9 @@ namespace MudBlazor
                 return string.Empty;
             }
 
-            var className = $"mud-drawer-{(drawer.GetState<bool>(nameof(MudDrawer.Open)) ? "open" : "close")}-{drawer.Variant.ToStringFast(true)}";
-            if (drawer.Variant is DrawerVariant.Responsive or DrawerVariant.Mini)
+            var effectiveVariant = drawer.GetEffectiveVariant();
+            var className = $"mud-drawer-{(drawer.GetState<bool>(nameof(MudDrawer.Open)) ? "open" : "close")}-{effectiveVariant.ToStringFast(true)}";
+            if (effectiveVariant is DrawerVariant.Responsive or DrawerVariant.Mini)
             {
                 className += $"-{drawer.Breakpoint.ToStringFast(true)}";
             }
