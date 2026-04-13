@@ -130,11 +130,47 @@ namespace MudBlazor
                 .AddClass(Class)
                 .Build();
 
-        private bool IsNumberMode => InputMode == InputMode.numeric || InputMode == InputMode.@decimal;
+        private bool IsNumberMode => InputMode is InputMode.numeric or InputMode.@decimal;
         private bool UsesNativeNumberInput => !IsFormatted && IsNumberMode;
         private InputType RenderedInputType => UsesNativeNumberInput ? InputType.Number : InputType.Text;
         private string? RenderedPattern => Pattern is null ? null : $"{Pattern.TrimEnd('*')}*";
-        private Dictionary<string, object?> InputAttributes => BuildInputAttributes();
+
+        private Dictionary<string, object?> InputAttributes
+        {
+            get
+            {
+                var attributes = new Dictionary<string, object?>(UserAttributes, StringComparer.OrdinalIgnoreCase);
+
+                if (!UsesNativeNumberInput)
+                {
+                    attributes["role"] = "spinbutton";
+
+                    var ariaValueNow = FormatParam(ReadValue);
+                    if (ariaValueNow is not null)
+                    {
+                        attributes["aria-valuenow"] = ariaValueNow;
+                    }
+
+                    if (_minHasValue)
+                    {
+                        attributes["aria-valuemin"] = FormatParam(_min);
+                    }
+
+                    if (_maxHasValue)
+                    {
+                        attributes["aria-valuemax"] = FormatParam(_max);
+                    }
+
+                    var ariaValueText = ReadText;
+                    if (!string.IsNullOrWhiteSpace(ariaValueText) && !string.Equals(ariaValueText, ariaValueNow, StringComparison.Ordinal))
+                    {
+                        attributes["aria-valuetext"] = ariaValueText;
+                    }
+                }
+
+                return attributes;
+            }
+        }
 
         // Defensive null check with object pattern: GetCulture() is annotated as non-null, but DataGrid may return null in certain cases.
         // In typical scenarios it is not null, as MudFormComponent sets a default culture and other components do not override it with null.
@@ -145,46 +181,6 @@ namespace MudBlazor
             // Edgy way to check if the MudComponentForm.Culture is provided explicitly and is a different one than the default CurrentUICulture && InvariantCulture.
             // If not, then we override to InvariantCulture to avoid issues with <input type="number">.
             (GetCulture() is { } culture && !culture.Equals(CultureInfo.CurrentUICulture) && !culture.Equals(CultureInfo.InvariantCulture));
-
-        private Dictionary<string, object?> BuildInputAttributes()
-        {
-            var attributes = new Dictionary<string, object?>(UserAttributes, StringComparer.OrdinalIgnoreCase);
-
-            if (UsesNativeNumberInput)
-            {
-                return attributes;
-            }
-
-            attributes["role"] = "spinbutton";
-            var ariaValueNow = FormatParam(ReadValue);
-            if (ariaValueNow is not null)
-            {
-                attributes["aria-valuenow"] = ariaValueNow;
-            }
-
-            if (_minHasValue)
-            {
-                attributes["aria-valuemin"] = FormatParam(_min);
-            }
-
-            if (_maxHasValue)
-            {
-                attributes["aria-valuemax"] = FormatParam(_max);
-            }
-
-            var ariaValueText = ReadText;
-            if (string.IsNullOrWhiteSpace(ariaValueText) || string.Equals(ariaValueText, ariaValueNow, StringComparison.Ordinal))
-            {
-                ariaValueText = null;
-            }
-
-            if (ariaValueText is not null)
-            {
-                attributes["aria-valuetext"] = ariaValueText;
-            }
-
-            return attributes;
-        }
 
         /// <inheritdoc />
         [ExcludeFromCodeCoverage]
