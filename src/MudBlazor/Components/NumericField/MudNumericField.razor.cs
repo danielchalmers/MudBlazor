@@ -131,6 +131,10 @@ namespace MudBlazor
                 .Build();
 
         private bool IsNumberMode => InputMode == InputMode.numeric || InputMode == InputMode.@decimal;
+        private bool UsesNativeNumberInput => !IsFormatted && IsNumberMode;
+        private InputType RenderedInputType => UsesNativeNumberInput ? InputType.Number : InputType.Text;
+        private string? RenderedPattern => Pattern is null ? null : $"{Pattern.TrimEnd('*')}*";
+        private Dictionary<string, object?> InputAttributes => BuildInputAttributes();
 
         // Defensive null check with object pattern: GetCulture() is annotated as non-null, but DataGrid may return null in certain cases.
         // In typical scenarios it is not null, as MudFormComponent sets a default culture and other components do not override it with null.
@@ -141,6 +145,42 @@ namespace MudBlazor
             // Edgy way to check if the MudComponentForm.Culture is provided explicitly and is a different one than the default CurrentUICulture && InvariantCulture.
             // If not, then we override to InvariantCulture to avoid issues with <input type="number">.
             (GetCulture() is { } culture && !culture.Equals(CultureInfo.CurrentUICulture) && !culture.Equals(CultureInfo.InvariantCulture));
+
+        private Dictionary<string, object?> BuildInputAttributes()
+        {
+            var attributes = new Dictionary<string, object?>(UserAttributes, StringComparer.OrdinalIgnoreCase);
+
+            if (UsesNativeNumberInput)
+            {
+                return attributes;
+            }
+
+            attributes["role"] = "spinbutton";
+            var ariaValueNow = FormatParam(ReadValue);
+            SetAttribute(attributes, "aria-valuenow", ariaValueNow);
+            SetAttribute(attributes, "aria-valuemin", _minHasValue ? FormatParam(_min) : null);
+            SetAttribute(attributes, "aria-valuemax", _maxHasValue ? FormatParam(_max) : null);
+
+            var ariaValueText = ReadText;
+            if (string.IsNullOrWhiteSpace(ariaValueText) || string.Equals(ariaValueText, ariaValueNow, StringComparison.Ordinal))
+            {
+                ariaValueText = null;
+            }
+
+            SetAttribute(attributes, "aria-valuetext", ariaValueText);
+            return attributes;
+        }
+
+        private static void SetAttribute(Dictionary<string, object?> attributes, string name, string? value)
+        {
+            if (value is null)
+            {
+                attributes.Remove(name);
+                return;
+            }
+
+            attributes[name] = value;
+        }
 
         /// <inheritdoc />
         [ExcludeFromCodeCoverage]
@@ -319,10 +359,10 @@ namespace MudBlazor
                     new("Dead", preventDown: "key+any"),
                 };
 
-                if (Pattern != null)
+                if (RenderedPattern is not null)
                 {
                     //prevent inputs that do not match the pattern
-                    keyOptions.Add(new($"/^(?!{Pattern.TrimEnd('*')}).$/", preventDown: "key+none|key+shift|key+alt"));
+                    keyOptions.Add(new($"/^(?!{RenderedPattern.TrimEnd('*')}).$/", preventDown: "key+none|key+shift|key+alt"));
                 }
 
                 var options = new KeyInterceptorOptions("mud-input-slot", keyOptions.ToArray());
@@ -343,7 +383,7 @@ namespace MudBlazor
             // Overrides the browser's culture since <input type="number"> does not consider culture.
             // If a specific Culture, Pattern, or Format is defined, <input type="text"> will be used 
             // with the corresponding attributes applied.
-            if (!IsFormatted)
+            if (UsesNativeNumberInput)
             {
                 await SetCultureAsync(CultureInfo.InvariantCulture);
             }

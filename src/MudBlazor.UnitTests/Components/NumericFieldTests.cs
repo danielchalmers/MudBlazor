@@ -1127,21 +1127,54 @@ namespace MudBlazor.UnitTests.Components
         public async Task Should_render_appropriate_type()
         {
             var comp = Context.Render<NumericFieldRenderTest>();
-            var field = comp.Find("#num-field-id");
 
             comp.Markup.Should().NotContain("pattern");
-            field.GetAttribute("type").Should().Be("number");
+            comp.Find("#num-field-id").GetAttribute("type").Should().Be("number");
+            comp.Find("#num-field-id").HasAttribute("role").Should().BeFalse();
 
             await comp.SetParametersAndRenderAsync(parameters => parameters
                 .Add(x => x.UsePattern, true));
             comp.Markup.Should().Contain("pattern");
-            field.GetAttribute("type").Should().Be("text");
+            comp.Find("#num-field-id").GetAttribute("type").Should().Be("text");
+            comp.Find("#num-field-id").GetAttribute("role").Should().Be("spinbutton");
 
             await comp.SetParametersAndRenderAsync(parameters => parameters
                 .Add(x => x.UsePattern, false));
 
             comp.Markup.Should().NotContain("pattern");
-            field.GetAttribute("type").Should().Be("number");
+            comp.Find("#num-field-id").GetAttribute("type").Should().Be("number");
+            comp.Find("#num-field-id").HasAttribute("role").Should().BeFalse();
+        }
+
+        [Test]
+        public void Text_numeric_field_should_expose_spinbutton_value_attributes()
+        {
+            var comp = Context.Render<MudNumericField<int>>(parameters => parameters
+                .Add(p => p.Pattern, "[0-9\\-]")
+                .Add(p => p.Min, -5)
+                .Add(p => p.Max, 5)
+                .Add(p => p.Value, 3));
+
+            comp.Find("input").GetAttribute("type").Should().Be("text");
+            comp.Find("input").GetAttribute("role").Should().Be("spinbutton");
+            comp.Find("input").GetAttribute("aria-valuenow").Should().Be("3");
+            comp.Find("input").GetAttribute("aria-valuemin").Should().Be("-5");
+            comp.Find("input").GetAttribute("aria-valuemax").Should().Be("5");
+            comp.Find("input").HasAttribute("aria-valuetext").Should().BeFalse();
+        }
+
+        [Test]
+        public void Formatted_numeric_field_should_expose_aria_valuetext()
+        {
+            var comp = Context.Render<MudNumericField<decimal>>(parameters => parameters
+                .Add(p => p.Value, 1234.5M)
+                .Add(p => p.Format, "N2")
+                .Add(p => p.Culture, CultureInfo.GetCultureInfo("en-US")));
+
+            comp.Find("input").GetAttribute("type").Should().Be("text");
+            comp.Find("input").GetAttribute("role").Should().Be("spinbutton");
+            comp.Find("input").GetAttribute("aria-valuenow").Should().Be("1234.5");
+            comp.Find("input").GetAttribute("aria-valuetext").Should().Be("1,234.50");
         }
 
         [Test]
