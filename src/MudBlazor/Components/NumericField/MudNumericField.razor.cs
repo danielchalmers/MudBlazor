@@ -157,9 +157,20 @@ namespace MudBlazor
 
             attributes["role"] = "spinbutton";
             var ariaValueNow = FormatParam(ReadValue);
-            SetAttribute(attributes, "aria-valuenow", ariaValueNow);
-            SetAttribute(attributes, "aria-valuemin", _minHasValue ? FormatParam(_min) : null);
-            SetAttribute(attributes, "aria-valuemax", _maxHasValue ? FormatParam(_max) : null);
+            if (ariaValueNow is not null)
+            {
+                attributes["aria-valuenow"] = ariaValueNow;
+            }
+
+            if (_minHasValue)
+            {
+                attributes["aria-valuemin"] = FormatParam(_min);
+            }
+
+            if (_maxHasValue)
+            {
+                attributes["aria-valuemax"] = FormatParam(_max);
+            }
 
             var ariaValueText = ReadText;
             if (string.IsNullOrWhiteSpace(ariaValueText) || string.Equals(ariaValueText, ariaValueNow, StringComparison.Ordinal))
@@ -167,19 +178,12 @@ namespace MudBlazor
                 ariaValueText = null;
             }
 
-            SetAttribute(attributes, "aria-valuetext", ariaValueText);
-            return attributes;
-        }
-
-        private static void SetAttribute(Dictionary<string, object?> attributes, string name, string? value)
-        {
-            if (value is null)
+            if (ariaValueText is not null)
             {
-                attributes.Remove(name);
-                return;
+                attributes["aria-valuetext"] = ariaValueText;
             }
 
-            attributes[name] = value;
+            return attributes;
         }
 
         /// <inheritdoc />
