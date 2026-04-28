@@ -14,7 +14,8 @@
 - Do not make speculative large changes when the intent is unclear. Ask a
   clarifying question or propose a short plan instead.
 - Follow `src/.editorconfig`.
-- Treat warnings as errors. Do not ignore analyzer warnings.
+- Treat warnings as errors. `src/Directory.Build.props` sets
+  `TreatWarningsAsErrors=true`; do not ignore analyzer warnings.
 - Do not run solution-wide commands unless explicitly requested.
 - Do not make `dotnet clean` part of the normal local loop. Use it only when
   incremental build state is clearly stale or corrupted.
@@ -91,6 +92,7 @@ dotnet test src/MudBlazor.UnitTests/MudBlazor.UnitTests.csproj --filter "FullyQu
 
 - Frontend asset builds use the local `bundotnet.cli` tool from
   `.config/dotnet-tools.json`, not a separately installed global Bun.
+- `src/Directory.Build.props` defines the Bun wrapper and current Bun version.
 - If Bun-related commands fail after tool or config changes, re-run
   `dotnet tool restore --tool-manifest .config/dotnet-tools.json`.
 - `/p:SkipBunCompile=true` skips the Bun-driven frontend asset compilation steps
@@ -139,7 +141,8 @@ dotnet format --no-restore
   build `src/MudBlazor/MudBlazor.csproj` with `/p:SkipBunCompile=true`.
 - For `TScripts` or `Styles`: run a normal scoped project build.
 - For docs changes: build the relevant docs project. Avoid docs host run loops
-  during agent verification.
+  during agent verification. Include `src/MudBlazor.Docs.Wasm/` when the docs
+  WebAssembly app is the affected target.
 - For docs example or API-page changes that need parity with CI, run
   `dotnet test src/MudBlazor.UnitTests.Docs/MudBlazor.UnitTests.Docs.csproj /p:GenerateDocsTests=true`.
 - For analyzer or code-fix changes: prefer a single filtered `dotnet test` from

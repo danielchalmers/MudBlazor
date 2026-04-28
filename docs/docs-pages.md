@@ -4,6 +4,12 @@
 - Use `src/MudBlazor.Docs/Pages/Components/Button/ButtonPage.razor` or
   `src/MudBlazor.Docs/Pages/Components/Menu/MenuPage.razor` as a reference for
   component docs structure.
+- Component docs pages normally use a `<DocsPage>` root with
+  `<DocsPageHeader>`, `<DocsPageContent>`, `DocsPageSection`, `SectionHeader`,
+  and `SectionContent`.
+- Pages live under `src/MudBlazor.Docs/Pages/Components/<ComponentName>/` and
+  are usually named `<ComponentName>Page.razor`. Follow the existing component
+  folder when the public name differs from the folder or page name.
 - Start with basic usage, introduce common variants next, group related
   scenarios with `SectionSubGroups`, and leave advanced or edge-case behavior
   for the end.
@@ -45,6 +51,7 @@
 - Docs examples are exercised by generated tests, so they must render without
   exceptions.
 - Generated docs tests are emitted as `Generated/*.generated.cs` files and must
-  not be edited by hand.
+  not be edited by hand. The non-generated files in `Generated/` are base test
+  scaffolding and can be edited when the shared docs-test behavior changes.
 - `MudBlazor.UnitTests.Docs` does not generate docs tests in the default local
   build unless `GenerateDocsTests=true`.

@@ -2,20 +2,25 @@
 
 ## Parameters and State
 
-- Component parameters must be auto-properties only. Do not put logic in getters
-  or setters.
+- New or modified component parameters should be auto-properties. Do not add
+  logic in getters or setters unless an existing compatibility pattern requires
+  it.
 - Do not overwrite component parameters directly. Use the backing
   `ParameterState<T>` and update through `.Value` or `SetValueAsync`.
 - Do not set other component parameters via `@ref` (`BL0005`). Use declarative
   binding instead.
-- Use `ParameterState<T>` for parameter updates and change handlers.
+- Use `ParameterState<T>` for parameters the component updates internally or
+  reacts to through change handlers. Do not retrofit unrelated parameters just
+  because a file already uses the framework.
 - Parameters managed through the parameter-state framework should be annotated
   with `[Parameter, ParameterState]`.
 
 ## Styling and Naming
 
-- Use `CssBuilder` for classes and styles.
-- Use CSS variables and design tokens. Do not hard-code colors.
+- Use `CssBuilder` for classes.
+- Use `StyleBuilder` for generated inline styles.
+- Use CSS variables and design tokens for component styling. Hard-coded colors
+  are mostly limited to palette/core color definitions or legacy exceptions.
 - Prefer positive parameter names. Avoid names like `DisableGutters`; prefer
   `Gutters`.
 
@@ -93,8 +98,8 @@ private Task ToggleAsync()
 
 ## Accessibility and Behavior
 
-- Add `[CascadingParameter] public bool RightToLeft { get; set; }` when layout
-  depends on direction.
+- Add a `RightToLeft` cascading parameter when layout depends on direction. Most
+  components use `[CascadingParameter(Name = "RightToLeft")]`.
 - Follow best ARIA practices without adding noise.
 - When generating HTML or ARIA attributes in component code, prefer fallback
   values so caller-provided attributes can override them whenever feasible; do
@@ -102,5 +107,7 @@ private Task ToggleAsync()
 - Ensure keyboard navigation works for interactive components.
 - Provide accessible names for interactive controls through a label,
   `aria-label`, or `aria-labelledby`.
-- Components with logic require bUnit tests and a docs page at
-  `src/MudBlazor.Docs/Pages/Components/<ComponentName>.razor`.
+- Components with public behavior usually require focused bUnit tests and docs
+  updates. Component docs pages live under
+  `src/MudBlazor.Docs/Pages/Components/<ComponentName>/<ComponentName>Page.razor`,
+  with some existing exceptions such as `ButtonFAB/FabPage.razor`.

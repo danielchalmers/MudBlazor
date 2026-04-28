@@ -20,12 +20,12 @@ linked reference docs for detailed rules.
 
 Read the smallest relevant set before editing:
 
-- [Repo map](docs/agent/repo-map.md): project layout, target projects, SDK requirements.
-- [Workflows](docs/agent/workflows.md): restore, build, test, Bun, formatting, and scoped verification.
-- [Component authoring](docs/agent/component-authoring.md): parameters, `ParameterState<T>`, styling, accessibility, public API docs.
-- [Docs pages](docs/agent/docs-pages.md): component docs pages and example rules.
-- [Testing](docs/agent/testing.md): bUnit rules, test naming, test locations, generated docs tests.
-- [Conventions](docs/agent/conventions.md): compatibility, analyzer rules, comments, and final checklist.
+- [Repo map](docs/repo-map.md): layout, project targets, and SDK requirements.
+- [Workflows](docs/workflows.md): restore, build, test, Bun, formatting, and verification.
+- [Component authoring](docs/component-authoring.md): parameters, state, styling, accessibility, and public API docs.
+- [Docs pages](docs/docs-pages.md): component docs pages and example rules.
+- [Testing](docs/testing.md): bUnit rules, test naming, test locations, and generated docs tests.
+- [Conventions](docs/conventions.md): compatibility, analyzer rules, comments, and final checklist.
 
 ## Common Routing
 
@@ -56,11 +56,12 @@ Read the smallest relevant set before editing:
 
 ## Component Changes
 
-- Component parameters must be auto-properties only.
+- New or modified component parameters should be auto-properties unless an
+  existing compatibility pattern requires otherwise.
 - Do not overwrite component parameters directly. Use `ParameterState<T>` and
   update through `.Value` or `SetValueAsync`.
-- Use `CssBuilder` for classes and styles, and use CSS variables/design tokens
-  instead of hard-coded colors.
+- Use `CssBuilder` for classes, `StyleBuilder` for generated inline styles, and
+  CSS variables/design tokens instead of hard-coded colors.
 - Add XML summaries and appropriate `[Category(...)]` attributes for public
   component parameters.
 - Component behavior changes require focused bUnit coverage and docs updates
@@ -70,11 +71,12 @@ Read the smallest relevant set before editing:
 
 - Run the narrowest relevant test filter first.
 - Prefer fail-first tests for behavior fixes.
-- Never cache bUnit `Find()` or `FindAll()` results; re-query after interactions.
-- Use async bUnit interactions such as `ClickAsync`, `ChangeAsync`, `BlurAsync`,
-  and `InputAsync`.
-- Test method names must not use `Test` or `Async` suffixes, must not contain
-  `Test_`, and must not end with trailing underscores.
+- Do not rely on cached bUnit `Find()` or `FindAll()` results across renders;
+  re-query after interactions.
+- Prefer async bUnit interactions such as `ClickAsync`, `ChangeAsync`,
+  `BlurAsync`, and `InputAsync` in new or modified tests.
+- Prefer descriptive test method names. When adding new tests, avoid generic
+  `Test` and `Async` suffixes unless matching nearby legacy tests.
 
 ## Before Finishing
 

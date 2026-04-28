@@ -13,10 +13,15 @@
 ## Code Style and Analyzer Rules
 
 - Fix new warnings instead of suppressing them.
+- `src/.editorconfig` is the source of truth for formatting. It uses 4-space
+  indentation for C# and Razor, 2-space indentation for SCSS and JSON, and LF
+  line endings for SCSS and JavaScript/TypeScript.
 - Comments should usually explain why a decision exists, not restate what the
   code already shows or describe straightforward mechanics.
 - Keep `src/MudBlazor/TScripts/entrypoint.js` in sync with files in
   `src/MudBlazor/TScripts/` except `entrypoint.js`.
+- The MudBlazor component analyzer is packaged with the library. Analyzer
+  changes should include or update tests under `src/MudBlazor.UnitTests.Analyzers/`.
 
 ## Change Checklist
 
