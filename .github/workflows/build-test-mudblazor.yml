@@ -67,7 +67,7 @@ jobs:
             "src/MudBlazor.UnitTests.Docs",
             "src/MudBlazor.UnitTests.Analyzers",
           ]
-        language: ["en_US", "de_DE", "fr_FR", "es_ES", "it_IT", "pt_BR", "ru_RU", "zh_CN", "tr-TR", "ar-SA", "hi-IN", "ja-JP", "ko-KR"]
+        language: ["en_US", "en_GB", "de_DE", "fr_FR", "es_ES", "pt_BR", "ru_RU", "tr_TR", "ar_SA", "he_IL", "hi_IN", "th_TH", "ja_JP", "ko_KR", "zh_CN", "zh_TW"]
     env:
       LANG: ${{ matrix.language }}.UTF-8
       LC_ALL: ${{ matrix.language }}.UTF-8
