@@ -57,6 +57,7 @@ jobs:
           dotnet format src --no-restore --verify-no-changes --include ${{ steps.changed-files.outputs.all_changed_files }}
 
   build-test:
+    name: build-test (${{ matrix.project-path }}, ${{ matrix.culture.key }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -67,6 +68,17 @@ jobs:
             "src/MudBlazor.UnitTests.Docs",
             "src/MudBlazor.UnitTests.Analyzers",
           ]
+        culture:
+          - key: invariant
+          - key: en-US
+          - key: en-GB
+          - key: fr-FR
+          - key: de-DE
+          - key: tr-TR
+          - key: ar-SA
+          - key: ja-JP
+          - key: zh-CN
+          - key: hi-IN
 
     steps:
       - uses: actions/checkout@v6
@@ -76,7 +88,9 @@ jobs:
         with:
           project-path: ${{ matrix.project-path }}
 
-      - name: Test ${{ matrix.project-path }}
+      - name: Test ${{ matrix.project-path }} (${{ matrix.culture.key }})
+        env:
+          MUD_TEST_CULTURE: ${{ matrix.culture.key }}
         run: |
           dotnet test \
           --project ${{ matrix.project-path }} \
@@ -92,7 +106,7 @@ jobs:
           --coverlet-skip-auto-props \
           --report-spekt-junit \
           --report-spekt-junit-filename junit.xml \
-          --results-directory ${{ matrix.project-path }}/TestResults
+          --results-directory ${{ matrix.project-path }}/TestResults/${{ matrix.culture.key }}
 
       - name: Extract project name
         id: project
@@ -104,10 +118,10 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-report-${{ steps.project.outputs.name }}
+          name: coverage-report-${{ steps.project.outputs.name }}-${{ matrix.culture.key }}
           path: |
-            ${{ matrix.project-path }}/TestResults/coverage.cobertura.*.xml
-            ${{ matrix.project-path }}/TestResults/junit.xml
+            ${{ matrix.project-path }}/TestResults/${{ matrix.culture.key }}/coverage.cobertura.*.xml
+            ${{ matrix.project-path }}/TestResults/${{ matrix.culture.key }}/junit.xml
 
   upload-codecov:
     needs: build-test
