@@ -12,6 +12,9 @@ concurrency:
   group: ${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.ref) || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+permissions:
+  contents: read
+
 env:
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
@@ -70,15 +73,35 @@ jobs:
           ]
         culture:
           - key: invariant
+            locale: C.UTF-8
+            invariant: "1"
           - key: en-US
+            locale: en_US.UTF-8
+            invariant: "0"
           - key: en-GB
+            locale: en_GB.UTF-8
+            invariant: "0"
           - key: fr-FR
+            locale: fr_FR.UTF-8
+            invariant: "0"
           - key: de-DE
+            locale: de_DE.UTF-8
+            invariant: "0"
           - key: tr-TR
+            locale: tr_TR.UTF-8
+            invariant: "0"
           - key: ar-SA
+            locale: ar_SA.UTF-8
+            invariant: "0"
           - key: ja-JP
+            locale: ja_JP.UTF-8
+            invariant: "0"
           - key: zh-CN
+            locale: zh_CN.UTF-8
+            invariant: "0"
           - key: hi-IN
+            locale: hi_IN.UTF-8
+            invariant: "0"
 
     steps:
       - uses: actions/checkout@v6
@@ -90,7 +113,9 @@ jobs:
 
       - name: Test ${{ matrix.project-path }} (${{ matrix.culture.key }})
         env:
-          MUD_TEST_CULTURE: ${{ matrix.culture.key }}
+          LANG: ${{ matrix.culture.locale }}
+          LC_ALL: ${{ matrix.culture.locale }}
+          DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: ${{ matrix.culture.invariant }}
         run: |
           dotnet test \
           --project ${{ matrix.project-path }} \
