@@ -6,5 +6,5 @@ using NUnit.Framework;
 
 [assembly: SetCulture("")]
 [assembly: SetUICulture("")]
-[assembly: Parallelizable(ParallelScope.Fixtures)]
-[assembly: FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+//[assembly: Parallelizable(ParallelScope.Fixtures)]
+//[assembly: FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
