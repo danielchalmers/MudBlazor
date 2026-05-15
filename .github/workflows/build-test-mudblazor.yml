@@ -12,9 +12,6 @@ concurrency:
   group: ${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.ref) || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-permissions:
-  contents: read
-
 env:
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
@@ -60,7 +57,6 @@ jobs:
           dotnet format src --no-restore --verify-no-changes --include ${{ steps.changed-files.outputs.all_changed_files }}
 
   build-test:
-    name: build-test (${{ matrix.project-path }}, ${{ matrix.culture.key }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -71,37 +67,10 @@ jobs:
             "src/MudBlazor.UnitTests.Docs",
             "src/MudBlazor.UnitTests.Analyzers",
           ]
-        culture:
-          - key: invariant
-            locale: C.UTF-8
-            invariant: "1"
-          - key: en-US
-            locale: en_US.UTF-8
-            invariant: "0"
-          - key: en-GB
-            locale: en_GB.UTF-8
-            invariant: "0"
-          - key: fr-FR
-            locale: fr_FR.UTF-8
-            invariant: "0"
-          - key: de-DE
-            locale: de_DE.UTF-8
-            invariant: "0"
-          - key: tr-TR
-            locale: tr_TR.UTF-8
-            invariant: "0"
-          - key: ar-SA
-            locale: ar_SA.UTF-8
-            invariant: "0"
-          - key: ja-JP
-            locale: ja_JP.UTF-8
-            invariant: "0"
-          - key: zh-CN
-            locale: zh_CN.UTF-8
-            invariant: "0"
-          - key: hi-IN
-            locale: hi_IN.UTF-8
-            invariant: "0"
+        language: ["en_US", "de_DE", "fr_FR", "es_ES", "it_IT", "pt_BR", "ru_RU", "zh_CN", "tr-TR", "ar-SA", "hi-IN", "ja-JP", "ko-KR"]
+    env:
+      LANG: ${{ matrix.language }}.UTF-8
+      LC_ALL: ${{ matrix.language }}.UTF-8
 
     steps:
       - uses: actions/checkout@v6
@@ -111,11 +80,7 @@ jobs:
         with:
           project-path: ${{ matrix.project-path }}
 
-      - name: Test ${{ matrix.project-path }} (${{ matrix.culture.key }})
-        env:
-          LANG: ${{ matrix.culture.locale }}
-          LC_ALL: ${{ matrix.culture.locale }}
-          DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: ${{ matrix.culture.invariant }}
+      - name: Test ${{ matrix.project-path }}
         run: |
           dotnet test \
           --project ${{ matrix.project-path }} \
@@ -131,8 +96,7 @@ jobs:
           --coverlet-skip-auto-props \
           --report-spekt-junit \
           --report-spekt-junit-filename junit.xml \
-          --results-directory ${{ matrix.project-path }}/TestResults/${{ matrix.culture.key }}
-
+          --results-directory ${{ matrix.project-path }}/TestResults
 
       - name: Extract project name
         id: project
@@ -144,10 +108,10 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-report-${{ steps.project.outputs.name }}-${{ matrix.culture.key }}
+          name: coverage-report-${{ steps.project.outputs.name }}
           path: |
-            ${{ matrix.project-path }}/TestResults/${{ matrix.culture.key }}/coverage.cobertura.*.xml
-            ${{ matrix.project-path }}/TestResults/${{ matrix.culture.key }}/junit.xml
+            ${{ matrix.project-path }}/TestResults/coverage.cobertura.*.xml
+            ${{ matrix.project-path }}/TestResults/junit.xml
 
   upload-codecov:
     needs: build-test
