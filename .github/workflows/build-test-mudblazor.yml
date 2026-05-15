@@ -133,6 +133,7 @@ jobs:
           --report-spekt-junit-filename junit.xml \
           --results-directory ${{ matrix.project-path }}/TestResults/${{ matrix.culture.key }}
 
+
       - name: Extract project name
         id: project
         run: |
