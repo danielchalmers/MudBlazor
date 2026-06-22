@@ -43,7 +43,9 @@ namespace MudBlazor
                 .WithChangeHandler(OnRightToLeftParameterChanged);
         }
 
-        private bool OverlayVisible => _openState.Value && Overlay && (Variant == DrawerVariant.Temporary || (IsBelowCurrentBreakpoint() && IsResponsiveOrMini()));
+        private DrawerVariant EffectiveVariant => Variant == DrawerVariant.Mini && IsBelowCurrentBreakpoint() ? DrawerVariant.Temporary : Variant;
+
+        private bool OverlayVisible => _openState.Value && Overlay && (EffectiveVariant == DrawerVariant.Temporary || (IsBelowCurrentBreakpoint() && IsResponsiveOrMini()));
 
         protected string Classname =>
             new CssBuilder("mud-drawer")
@@ -56,7 +58,7 @@ namespace MudBlazor
                 .AddClass($"mud-drawer-clipped-{ClipMode.ToStringFast(true)}")
                 .AddClass($"mud-theme-{Color.ToStringFast(true)}", Color != Color.Default)
                 .AddClass($"mud-elevation-{Elevation}")
-                .AddClass($"mud-drawer-{Variant.ToStringFast(true)}")
+                .AddClass($"mud-drawer-{EffectiveVariant.ToStringFast(true)}")
                 .AddClass(Class)
                 .Build();
 
@@ -64,7 +66,7 @@ namespace MudBlazor
             new CssBuilder("mud-drawer-overlay mud-overlay-drawer")
                 .AddClass($"mud-drawer-pos-{GetPosition()}")
                 .AddClass($"mud-drawer-overlay--open", _openState.Value)
-                .AddClass($"mud-drawer-overlay-{Variant.ToStringFast(true)}")
+                .AddClass($"mud-drawer-overlay-{EffectiveVariant.ToStringFast(true)}")
                 .AddClass($"mud-drawer-overlay-{Breakpoint.ToStringFast(true)}")
                 .AddClass($"mud-drawer-overlay--initial", _initial)
                 .AddClass($"mud-skip-overlay-positioning") // popovers try to position the overlay by zindex, this skips that behavior
@@ -415,6 +417,8 @@ namespace MudBlazor
 
         internal bool IsFixed => Fixed && DrawerContainer is MudLayout;
 
+        internal DrawerVariant GetEffectiveVariant() => EffectiveVariant;
+
         private async Task OnPointerEnterAsync()
         {
             if (Variant == DrawerVariant.Mini && !_openState.Value && OpenMiniOnHover)
@@ -435,7 +439,7 @@ namespace MudBlazor
 
         async Task INavigationEventReceiver.OnNavigation()
         {
-            if (Variant == DrawerVariant.Temporary ||
+            if (EffectiveVariant == DrawerVariant.Temporary ||
                 (Variant == DrawerVariant.Responsive && await BrowserViewportService.GetCurrentBreakpointAsync() < Breakpoint))
             {
                 await _openState.SetValueAsync(false);
