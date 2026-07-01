@@ -472,6 +472,24 @@ namespace MudBlazor.UnitTests.Components
             comp.Instance.ReadValue.Should().Be("ABC");
         }
 
+        /// <summary>
+        /// Closing the menu after disposal must not throw: it swaps out and cancels the cancellation source that DisposeAsyncCore already disposed.
+        /// </summary>
+        [Test]
+        public async Task Autocomplete_CloseMenuAfterDispose_ShouldNotThrow()
+        {
+            var comp = Context.Render<MudAutocomplete<string>>();
+            var autocomplete = comp.Instance;
+
+            // Create the cancellation source, then dispose the component, which cancels and disposes that source without clearing the field.
+            await comp.InvokeAsync(autocomplete.CloseMenuAsync);
+            await comp.InvokeAsync(() => autocomplete.DisposeAsync().AsTask());
+
+            var act = () => comp.InvokeAsync(autocomplete.CloseMenuAsync);
+
+            await act.Should().NotThrowAsync();
+        }
+
         [Test]
         public async Task CoerceValueWithToStringFuncAndObjectValue_DoesNotThrowOnBlur()
         {
