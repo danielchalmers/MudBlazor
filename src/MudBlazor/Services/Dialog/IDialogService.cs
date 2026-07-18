@@ -53,6 +53,15 @@ namespace MudBlazor
         Task<IDialogReference> ShowAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TComponent>(string? title, DialogOptions options) where TComponent : IComponent;
 
         /// <summary>
+        /// Displays a dialog with options.
+        /// </summary>
+        /// <typeparam name="TComponent">The dialog to display.</typeparam>
+        /// <param name="options">The custom display options for the dialog.</param>
+        /// <returns>A reference to the dialog.</returns>
+        Task<IDialogReference> ShowAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TComponent>(DialogOptions options) where TComponent : IComponent
+            => ShowAsync<TComponent>(string.Empty, options);
+
+        /// <summary>
         /// Displays a dialog with parameters.
         /// </summary>
         /// <typeparam name="TComponent">The dialog to display.</typeparam>
@@ -78,6 +87,16 @@ namespace MudBlazor
         /// <param name="options">The custom display options for the dialog.</param>
         /// <returns>A reference to the dialog.</returns>
         Task<IDialogReference> ShowAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TComponent>(string? title, DialogParameters parameters, DialogOptions? options) where TComponent : IComponent;
+
+        /// <summary>
+        /// Displays a dialog with parameters and options.
+        /// </summary>
+        /// <typeparam name="TComponent">The dialog to display.</typeparam>
+        /// <param name="parameters">The custom parameters to set within the dialog.</param>
+        /// <param name="options">The custom display options for the dialog.</param>
+        /// <returns>A reference to the dialog.</returns>
+        Task<IDialogReference> ShowAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TComponent>(DialogParameters parameters, DialogOptions options) where TComponent : IComponent
+            => ShowAsync<TComponent>(string.Empty, parameters, options);
 
         /// <summary>
         /// Displays a dialog.
