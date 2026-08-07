@@ -263,22 +263,12 @@
   }
 
   &.mud-timeline-position-top {
-    &::before {
-      top: 47px;
-      bottom: auto;
-    }
-
     .mud-timeline-item {
       flex-direction: column-reverse;
     }
   }
 
   &.mud-timeline-position-bottom {
-    &::before {
-      top: auto;
-      bottom: 47px;
-    }
-
     .mud-timeline-item {
       flex-direction: column;
     }
@@ -286,13 +276,22 @@
   /* Both Top & Bottom */
   &.mud-timeline-position {
     &-top, &-bottom {
+      /* The line is drawn on each divider rather than at a fixed offset so it stays on the dots
+         however much room the opposite content takes.
+         The negative margin bleeds it across the item padding so the segments join up, and the
+         matching padding keeps the dot where it was. */
+      &::before {
+        content: none;
+      }
 
       .mud-timeline-item-content {
         max-height: calc(100% - 96px);
       }
 
-      .mud-timeline-item-opposite {
-        display: none;
+      .mud-timeline-item-divider {
+        margin: 0 -24px;
+        padding: 0 24px;
+        background: linear-gradient(var(--mud-palette-divider), var(--mud-palette-divider)) center / 100% 2px no-repeat;
       }
     }
   }
