@@ -136,9 +136,15 @@ namespace MudBlazor
         protected string TableStyle =>
             new StyleBuilder()
                 .AddStyle("height", Height, !string.IsNullOrWhiteSpace(Height))
-                .AddStyle("width", "max-content", when: HorizontalScrollbar || ColumnResizeMode == ResizeMode.Container)
-                .AddStyle("overflow", "clip", when: (HorizontalScrollbar || ColumnResizeMode == ResizeMode.Container) && HasStickyColumns)
+                .AddStyle("width", "max-content", when: (HorizontalScrollbar || ColumnResizeMode == ResizeMode.Container) && !HasStickyColumns)
                 .AddStyle("display", "block", when: HorizontalScrollbar)
+                .Build();
+
+        // Sticky cells anchor to the nearest scroll container, so the container has to stay the element that
+        // scrolls in both directions. Widening the table beyond it is done one level down instead.
+        protected string DropContainerStyle =>
+            new StyleBuilder()
+                .AddStyle("width", "max-content", when: (HorizontalScrollbar || ColumnResizeMode == ResizeMode.Container) && HasStickyColumns)
                 .Build();
 
         protected string TableClass =>

@@ -4821,11 +4821,28 @@ namespace MudBlazor.UnitTests.Components
             footer.GetAttribute("style").Should().Contain("left:0px");
 
             var body = dataGrid.Find(".mud-table-container");
-            body.GetAttribute("style").Should().Contain("width:max-content");
-            body.GetAttribute("style").Should().Contain("overflow:clip");
+            body.GetAttribute("style").Should().NotContain("width:max-content");
+            body.GetAttribute("style").Should().NotContain("overflow:clip");
+
+            var dropContainer = dataGrid.Find(".mud-table-container .mud-drop-container");
+            dropContainer.GetAttribute("style").Should().Contain("width:max-content");
 
             dataGrid.Find("th").ClassList.Should().Contain("sticky-left");
             dataGrid.FindAll("th").Last().ClassList.Should().Contain("sticky-right");
+        }
+
+        [Test]
+        public async Task DataGridStickyColumnsKeepContainerScrollable()
+        {
+            var comp = Context.Render<DataGridStickyColumnsResizerTest>();
+            var dataGrid = comp.FindComponent<MudDataGrid<DataGridStickyColumnsResizerTest.Model>>();
+
+            dataGrid.Find(".mud-table-container").GetAttribute("style").Should().NotContain("overflow", because: "the container has to stay a scroll container so a Height can still scroll vertically");
+
+            await comp.FindComponent<MudSwitch<bool>>().Find("input").ChangeAsync(new ChangeEventArgs { Value = false });
+
+            dataGrid.Find(".mud-table-container").GetAttribute("style").Should().Contain("width:max-content");
+            dataGrid.FindAll(".mud-table-container .mud-drop-container[style*='width:max-content']").Should().BeEmpty();
         }
 
         [Test]
