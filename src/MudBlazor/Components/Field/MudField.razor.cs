@@ -102,6 +102,16 @@ namespace MudBlazor
         public string? HelperText { get; set; }
 
         /// <summary>
+        /// The content displayed below the field, instead of <see cref="HelperText"/>.
+        /// </summary>
+        /// <remarks>
+        /// Defaults to <c>null</c>.  When set, this content replaces <see cref="HelperText"/> and allows markup such as links or emphasized text.
+        /// </remarks>
+        [Parameter]
+        [Category(CategoryTypes.Field.Behavior)]
+        public RenderFragment? HelperTextContent { get; set; }
+
+        /// <summary>
         /// Sets the width of the field to the width of the container.
         /// </summary>
         /// <remarks>

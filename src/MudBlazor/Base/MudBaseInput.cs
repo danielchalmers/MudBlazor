@@ -120,7 +120,7 @@ namespace MudBlazor
         /// The ID of the helper element, for use by <c>aria-describedby</c>.
         /// </summary>
         /// <remarks>
-        /// Defaults to <c>null</c>.  When set it is appended to the <c>aria-describedby</c> attribute to improve accessibility for users. This ID takes precedence over the helper element rendered when <see cref="HelperText"/> is provided.
+        /// Defaults to <c>null</c>.  When set it is appended to the <c>aria-describedby</c> attribute to improve accessibility for users. This ID takes precedence over the helper element rendered when <see cref="HelperText"/> or <see cref="HelperTextContent"/> is provided.
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.FormComponent.Validation)]
@@ -135,6 +135,16 @@ namespace MudBlazor
         [Parameter]
         [Category(CategoryTypes.FormComponent.Behavior)]
         public string? HelperText { get; set; }
+
+        /// <summary>
+        /// The content displayed below the text field, instead of <see cref="HelperText"/>.
+        /// </summary>
+        /// <remarks>
+        /// Defaults to <c>null</c>.  When set, this content replaces <see cref="HelperText"/> and allows markup such as links or emphasized text.  The <see cref="HelperTextOnFocus"/> property controls when this content is visible.
+        /// </remarks>
+        [Parameter]
+        [Category(CategoryTypes.FormComponent.Behavior)]
+        public RenderFragment? HelperTextContent { get; set; }
 
         /// <summary>
         /// Displays the <see cref="HelperText"/> only when this input has focus.
@@ -776,7 +786,7 @@ namespace MudBlazor
                 return null;
             }
 
-            return HelperText is not null
+            return HelperText is not null || HelperTextContent is not null
                 ? $"{_inputIdState.Value}-helper-text"
                 : null;
         }

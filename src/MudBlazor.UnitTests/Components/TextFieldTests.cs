@@ -2302,5 +2302,71 @@ namespace MudBlazor.UnitTests.Components
             var preventScroll = focusInvocation.Arguments.OfType<bool>().Single();
             preventScroll.Should().BeFalse();
         }
+
+        /// <summary>
+        /// The helper text stays HTML-encoded when no helper content is supplied.
+        /// </summary>
+        [Test]
+        public void HelperText_ShouldEncodeMarkup()
+        {
+            var comp = Context.Render<MudTextField<string>>(parameters => parameters
+                .Add(p => p.InputId, "input-id")
+                .Add(p => p.HelperText, "<b>bold</b> helper"));
+
+            var helper = comp.Find("#input-id-helper-text");
+            helper.QuerySelector("b").Should().BeNull();
+            helper.TextContent.Trim().Should().Be("<b>bold</b> helper");
+        }
+
+        /// <summary>
+        /// The helper content replaces the helper text and renders its markup (#6121).
+        /// </summary>
+        [Test]
+        public void HelperTextContent_ShouldReplaceHelperText()
+        {
+            var comp = Context.Render<MudTextField<string>>(parameters => parameters
+                .Add(p => p.InputId, "input-id")
+                .Add(p => p.HelperText, "plain helper")
+                .Add(p => p.HelperTextContent, "<b>bold</b> helper"));
+
+            var helper = comp.Find("#input-id-helper-text");
+            helper.QuerySelector("b")!.TextContent.Should().Be("bold");
+            helper.TextContent.Should().NotContain("plain helper");
+        }
+
+        /// <summary>
+        /// The helper content alone is linked to the input through <c>aria-describedby</c> (#6121).
+        /// </summary>
+        [Test]
+        public async Task HelperTextContent_ShouldSetAriaDescribedBy()
+        {
+            var comp = Context.Render<MudTextField<string>>(parameters => parameters
+                .Add(p => p.InputId, "input-id"));
+
+            comp.Find("input").HasAttribute("aria-describedby").Should().BeFalse();
+
+            await comp.SetParametersAndRenderAsync(parameters => parameters
+                .Add(p => p.HelperTextContent, "<b>bold</b> helper"));
+
+            comp.Find("input").GetAttribute("aria-describedby").Should().Be("input-id-helper-text");
+            comp.Find("#input-id-helper-text").QuerySelector("b").Should().NotBeNull();
+        }
+
+        /// <summary>
+        /// The error text still replaces the helper content while the input is in an error state (#6121).
+        /// </summary>
+        [Test]
+        public void HelperTextContent_ShouldBeReplacedByErrorText()
+        {
+            var comp = Context.Render<MudTextField<string>>(parameters => parameters
+                .Add(p => p.InputId, "input-id")
+                .Add(p => p.HelperTextContent, "<b>bold</b> helper")
+                .Add(p => p.Error, true)
+                .Add(p => p.ErrorId, "error-id")
+                .Add(p => p.ErrorText, "error text"));
+
+            comp.FindAll("#input-id-helper-text").Should().BeEmpty();
+            comp.Find("#error-id").TextContent.Trim().Should().Be("error text");
+        }
     }
 }

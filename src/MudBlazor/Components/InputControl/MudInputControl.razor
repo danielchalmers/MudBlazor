@@ -12,7 +12,7 @@
             </MudInputLabel>
         }
     </div>
-    @if (Error || !string.IsNullOrEmpty(HelperText) || !string.IsNullOrEmpty(CounterText))
+    @if (Error || HelperTextContent is not null || !string.IsNullOrEmpty(HelperText) || !string.IsNullOrEmpty(CounterText))
     {
         <div class="@HelperContainer">
             <div class="d-flex @HelperClass">
@@ -20,6 +20,12 @@
                 {
                     <div class="me-auto" id="@ErrorId">
                         @ErrorText
+                    </div>
+                }
+                else if (HelperTextContent is not null)
+                {
+                    <div class="me-auto" id="@HelperId">
+                        @HelperTextContent
                     </div>
                 }
                 else if (!string.IsNullOrEmpty(HelperText))

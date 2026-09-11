@@ -95,7 +95,16 @@ namespace MudBlazor
         public string? HelperText { get; set; }
 
         /// <summary>
-        /// The ID that will be used by aria-describedby if <see cref="HelperText"/> is set.
+        /// The content displayed below the text field, instead of <see cref="HelperText"/>.
+        /// </summary>
+        /// <remarks>
+        /// Defaults to <c>null</c>.  When set, this content replaces <see cref="HelperText"/> and allows markup such as links or emphasized text.
+        /// </remarks>
+        [Parameter]
+        public RenderFragment? HelperTextContent { get; set; }
+
+        /// <summary>
+        /// The ID that will be used by aria-describedby if <see cref="HelperText"/> or <see cref="HelperTextContent"/> is set.
         /// </summary>
         [Parameter]
         public string? HelperId { get; set; }

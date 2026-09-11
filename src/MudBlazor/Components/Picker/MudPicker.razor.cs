@@ -250,6 +250,16 @@ namespace MudBlazor
         public string? HelperText { get; set; }
 
         /// <summary>
+        /// The content displayed below the text field, instead of <see cref="HelperText"/>.
+        /// </summary>
+        /// <remarks>
+        /// Defaults to <c>null</c>.  When set, this content replaces <see cref="HelperText"/> and allows markup such as links or emphasized text.  The <see cref="HelperTextOnFocus"/> property controls when this content is visible.
+        /// </remarks>
+        [Parameter]
+        [Category(CategoryTypes.FormComponent.Behavior)]
+        public RenderFragment? HelperTextContent { get; set; }
+
+        /// <summary>
         /// Displays the <see cref="HelperText"/> only when this input has focus.
         /// </summary>
         /// <remarks>

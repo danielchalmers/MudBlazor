@@ -70,5 +70,34 @@ namespace MudBlazor.UnitTests.Components
             fields[4].TextContent.Trim().Should().Be("Some Content Here");
             fieldLabels[4].TextContent.Trim().Should().Be("What am I? (4)");
         }
+
+        /// <summary>
+        /// The helper text stays HTML-encoded when no helper content is supplied.
+        /// </summary>
+        [Test]
+        public void HelperText_ShouldEncodeMarkup()
+        {
+            var comp = Context.Render<MudField>(parameters => parameters
+                .Add(p => p.HelperText, "<b>bold</b> helper"));
+
+            var helper = comp.Find(".mud-input-helper-text");
+            helper.QuerySelector("b").Should().BeNull();
+            helper.TextContent.Trim().Should().Be("<b>bold</b> helper");
+        }
+
+        /// <summary>
+        /// The helper content replaces the helper text and renders its markup (#6121).
+        /// </summary>
+        [Test]
+        public void HelperTextContent_ShouldReplaceHelperText()
+        {
+            var comp = Context.Render<MudField>(parameters => parameters
+                .Add(p => p.HelperText, "plain helper")
+                .Add(p => p.HelperTextContent, "<b>bold</b> helper"));
+
+            var helper = comp.Find(".mud-input-helper-text");
+            helper.QuerySelector("b")!.TextContent.Should().Be("bold");
+            helper.TextContent.Should().NotContain("plain helper");
+        }
     }
 }
