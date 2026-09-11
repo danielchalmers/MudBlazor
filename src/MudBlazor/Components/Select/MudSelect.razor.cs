@@ -751,9 +751,9 @@ namespace MudBlazor
         {
             await _openState.SetValueAsync(false);
             UpdateIcon();
+            StateHasChanged();
             if (focusAgain)
             {
-                StateHasChanged();
                 _elementReference.FocusAsync().CatchAndLog(ignoreExceptions: true);
                 StateHasChanged();
             }

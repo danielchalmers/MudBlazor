@@ -1619,6 +1619,80 @@ namespace MudBlazor.UnitTests.Components
             await comp.WaitForAssertionAsync(() => comp.Find("div.mud-popover").ClassList.Should().NotContain("mud-popover-open"));
         }
 
+        /// <summary>
+        /// Enter closes the drop-down in the DOM even when the highlighted value is already the selected one (#13582).
+        /// </summary>
+        [Test]
+        public async Task Select_EnterClosesPopoverWhenValueUnchanged()
+        {
+            var keyInterceptorService = Context.AddKeyInterceptorService();
+            var comp = Context.Render<SelectTest1>();
+            var select = comp.FindComponent<MudSelect<string>>();
+
+            await comp.Find("div.mud-input-control").MouseDownAsync();
+            await comp.WaitForAssertionAsync(() => comp.Find("div.mud-popover").ClassList.Should().Contain("mud-popover-open"));
+
+            // SelectionOnEnter is false by default, so the arrow keys already committed the value.
+            // Enter therefore takes SelectOption's unchanged-value branch, which only closes the menu.
+            await comp.InvokeAsync(() => keyInterceptorService.OnKeyDown(select.Instance.ElementId, new KeyboardEventArgs { Key = "ArrowDown", Type = "keydown", }));
+            await comp.InvokeAsync(() => keyInterceptorService.OnKeyDown(select.Instance.ElementId, new KeyboardEventArgs { Key = "ArrowDown", Type = "keydown", }));
+            await comp.WaitForAssertionAsync(() => select.Instance.ReadValue.Should().Be("2"));
+
+            await comp.InvokeAsync(() => keyInterceptorService.OnKeyDown(select.Instance.ElementId, new KeyboardEventArgs { Key = "Enter", Type = "keydown", }));
+
+            await comp.WaitForAssertionAsync(() => comp.Find("div.mud-popover").ClassList.Should().NotContain("mud-popover-open"));
+            comp.Find("[role='combobox']").GetAttribute("aria-expanded").Should().Be("false");
+            select.Instance.GetState(x => x.Open).Should().BeFalse();
+            // The render fix must not change which value Enter commits.
+            select.Instance.ReadValue.Should().Be("2");
+        }
+
+        /// <summary>
+        /// Clicking the item that is already selected closes the drop-down in the DOM (#13582).
+        /// </summary>
+        [Test]
+        public async Task Select_ClickingAlreadySelectedItemClosesPopover()
+        {
+            var comp = Context.Render<SelectTest1>();
+            var select = comp.FindComponent<MudSelect<string>>();
+
+            await comp.Find("div.mud-input-control").MouseDownAsync();
+            await comp.WaitForAssertionAsync(() => comp.FindAll("div.mud-list-item").Should().HaveCount(4));
+            await comp.FindAll("div.mud-list-item")[1].ClickAsync();
+            await comp.WaitForAssertionAsync(() => select.Instance.ReadValue.Should().Be("2"));
+
+            // Re-open and pick the same item again so SelectOption takes its unchanged-value early return.
+            await comp.Find("div.mud-input-control").MouseDownAsync();
+            await comp.WaitForAssertionAsync(() => comp.Find("div.mud-popover").ClassList.Should().Contain("mud-popover-open"));
+            await comp.FindAll("div.mud-list-item")[1].ClickAsync();
+
+            await comp.WaitForAssertionAsync(() => comp.Find("div.mud-popover").ClassList.Should().NotContain("mud-popover-open"));
+            comp.Find("[role='combobox']").GetAttribute("aria-expanded").Should().Be("false");
+            select.Instance.ReadValue.Should().Be("2");
+        }
+
+        /// <summary>
+        /// Escape closes the drop-down and clears aria-expanded exactly as it did before the render fix (#13582).
+        /// </summary>
+        [Test]
+        public async Task Select_EscapeClosesPopoverAndClearsAriaExpanded()
+        {
+            var keyInterceptorService = Context.AddKeyInterceptorService();
+            var comp = Context.Render<SelectTest1>();
+            var select = comp.FindComponent<MudSelect<string>>();
+
+            await comp.Find("div.mud-input-control").MouseDownAsync();
+            await comp.WaitForAssertionAsync(() => comp.Find("div.mud-popover").ClassList.Should().Contain("mud-popover-open"));
+            comp.Find("[role='combobox']").GetAttribute("aria-expanded").Should().Be("true");
+
+            await comp.InvokeAsync(() => keyInterceptorService.OnKeyDown(select.Instance.ElementId, new KeyboardEventArgs { Key = "Escape", Type = "keydown", }));
+
+            await comp.WaitForAssertionAsync(() => comp.Find("div.mud-popover").ClassList.Should().NotContain("mud-popover-open"));
+            comp.Find("[role='combobox']").GetAttribute("aria-expanded").Should().Be("false");
+            select.Instance.GetState(x => x.Open).Should().BeFalse();
+            select.Instance.ReadValue.Should().BeNull();
+        }
+
         [Test]
         public async Task Select_SelectionOnEnter_ShouldOnlyChangeOnEnter()
         {
@@ -1705,7 +1779,6 @@ namespace MudBlazor.UnitTests.Components
 
             await comp.InvokeAsync(() => keyInterceptorService.OnKeyDown(select.Instance.ElementId, new KeyboardEventArgs { Key = "Tab", Type = "keydown", }));
             await comp.InvokeAsync(() => keyInterceptorService.OnKeyUp(select.Instance.ElementId, new KeyboardEventArgs { Key = "Tab" }));
-            comp.Render(); // <-- this is necessary for reliable passing of the test
             await comp.WaitForAssertionAsync(() => comp.Find("div.mud-popover").ClassList.Should().NotContain("mud-popover-open"));
         }
 
