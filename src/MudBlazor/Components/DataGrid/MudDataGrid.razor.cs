@@ -29,6 +29,9 @@ namespace MudBlazor
     [CascadingTypeParameter(nameof(T))]
     public partial class MudDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T> : MudComponentBase, IDisposable
     {
+        [Inject]
+        private IScrollManager ScrollManager { get; set; } = null!;
+
         private MudForm? _editForm;
         internal int? _rowsPerPage;
         private int _currentPage = 0;
@@ -55,6 +58,7 @@ namespace MudBlazor
         private (double Top, double Left) _filtersMenuPosition = (0, 0);
         private (double Top, double Left) _columnsPanelPosition = (0, 0);
         private Guid? _filterDefinitionIdToFocus;
+        private readonly string _gridContainerId = Identifier.Create("mudgrid_");
 
         private readonly ParameterState<T?> _selectedItemState;
         private readonly ParameterState<HashSet<T>?> _selectedItemsState;
@@ -1327,7 +1331,10 @@ namespace MudBlazor
                 CurrentPageChanged.InvokeAsync(_currentPage);
 
                 if (_isFirstRendered)
+                {
                     InvokeAsync(InvokeServerLoadFunc);
+                    InvokeAsync(ScrollToTopIfEnabledAsync);
+                }
             }
         }
 
@@ -1336,6 +1343,17 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         public EventCallback<int> CurrentPageChanged { get; set; }
+
+        /// <summary>
+        /// Scrolls back to the top of this grid when the page changes.
+        /// </summary>
+        /// <remarks>
+        /// Defaults to <c>false</c>.  When <c>true</c>, this grid's scroll container is scrolled back to the top after <see cref="CurrentPage"/> changes.
+        /// The grid only has its own scroll container when <see cref="Height"/> is set; otherwise the page itself is scrolled to the top.
+        /// </remarks>
+        [Parameter]
+        [Category(CategoryTypes.DataGrid.Pagination)]
+        public bool ScrollToTopOnPageChange { get; set; }
 
         /// <summary>
         /// Prevents values from being edited.
@@ -2612,9 +2630,11 @@ namespace MudBlazor
 
             _rowsPerPage = size;
 
+            var currentPageHasChanged = false;
+
             if (resetPage)
             {
-                var currentPageHasChanged = _currentPage != 0;
+                currentPageHasChanged = _currentPage != 0;
                 _currentPage = 0;
                 if (currentPageHasChanged)
                     await CurrentPageChanged.InvokeAsync(_currentPage);
@@ -2625,7 +2645,26 @@ namespace MudBlazor
             StateHasChanged();
 
             if (_isFirstRendered)
+            {
                 await InvokeAsync(InvokeServerLoadFunc);
+
+                if (currentPageHasChanged)
+                    await ScrollToTopIfEnabledAsync();
+            }
+        }
+
+        /// <summary>
+        /// Scrolls this grid back to the top when <see cref="ScrollToTopOnPageChange"/> is enabled.
+        /// </summary>
+        private Task ScrollToTopIfEnabledAsync()
+        {
+            if (!ScrollToTopOnPageChange)
+                return Task.CompletedTask;
+
+            // Only a height-constrained container actually scrolls; without one the page is the scroller, and a null selector falls back to the document element in JavaScript.
+            var selector = string.IsNullOrWhiteSpace(Height) ? null : $"#{_gridContainerId}";
+
+            return ScrollManager.ScrollToTopAsync(selector).AsTask();
         }
 
         /// <summary>

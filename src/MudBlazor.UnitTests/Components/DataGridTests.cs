@@ -14,6 +14,7 @@ using Bunit;
 using Bunit.Rendering;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
 using MudBlazor.Extensions;
 using MudBlazor.Interfaces;
 using MudBlazor.UnitTests.TestComponents.DataGrid;
@@ -9447,6 +9448,178 @@ namespace MudBlazor.UnitTests.Components
 
             dataGrid.Instance.SortDefinitions.Should().BeEmpty();
             dataGrid.FindAll("th").Should().OnlyContain(header => !header.HasAttribute("aria-sort"));
+        }
+
+        /// <summary>
+        /// The grid container has no generated id and never scrolls while ScrollToTopOnPageChange is off.
+        /// </summary>
+        [Test]
+        public async Task DataGridScrollToTopOnPageChangeDisabledByDefault()
+        {
+            var scrollManager = new RecordingScrollManager();
+            Context.Services.AddSingleton<IScrollManager>(scrollManager);
+
+            var comp = RenderPagedDataGrid();
+
+            comp.Find(".mud-table-container").HasAttribute("id").Should().BeFalse();
+            scrollManager.ScrollToTopCalls.Should().BeEmpty();
+
+            await comp.InvokeAsync(() => comp.Instance.NavigateTo(Page.Next));
+
+            comp.Instance.CurrentPage.Should().Be(1);
+            scrollManager.ScrollToTopCalls.Should().BeEmpty();
+        }
+
+        /// <summary>
+        /// A page change scrolls the grid back to the top exactly once when ScrollToTopOnPageChange is on.
+        /// </summary>
+        [Test]
+        public async Task DataGridScrollToTopOnPageChangeScrollsOnPageChange()
+        {
+            var scrollManager = new RecordingScrollManager();
+            Context.Services.AddSingleton<IScrollManager>(scrollManager);
+
+            var comp = RenderPagedDataGrid(parameters => parameters.Add(p => p.ScrollToTopOnPageChange, true));
+
+            // The initial render must not scroll.
+            scrollManager.ScrollToTopCalls.Should().BeEmpty();
+
+            await comp.InvokeAsync(() => comp.Instance.NavigateTo(Page.Next));
+
+            comp.Instance.CurrentPage.Should().Be(1);
+            scrollManager.ScrollToTopCalls.Should().ContainSingle();
+        }
+
+        /// <summary>
+        /// Re-rendering or navigating to the page which is already shown does not scroll the grid.
+        /// </summary>
+        [Test]
+        public async Task DataGridScrollToTopOnPageChangeIgnoresRendersWithoutPageChange()
+        {
+            var scrollManager = new RecordingScrollManager();
+            Context.Services.AddSingleton<IScrollManager>(scrollManager);
+
+            var comp = RenderPagedDataGrid(parameters => parameters.Add(p => p.ScrollToTopOnPageChange, true));
+
+            await comp.SetParametersAndRenderAsync(parameters => parameters.Add(p => p.Dense, true));
+            await comp.InvokeAsync(() => comp.Instance.NavigateTo(Page.Previous));
+            await comp.InvokeAsync(() => comp.Instance.SetSortAsync("Value", SortDirection.Descending, x => x));
+
+            comp.Instance.CurrentPage.Should().Be(0);
+            scrollManager.ScrollToTopCalls.Should().BeEmpty();
+        }
+
+        /// <summary>
+        /// Without a fixed height the page itself is scrolled, which the scroll manager expresses as a null selector.
+        /// </summary>
+        [Test]
+        public async Task DataGridScrollToTopOnPageChangeScrollsPageWithoutHeight()
+        {
+            var scrollManager = new RecordingScrollManager();
+            Context.Services.AddSingleton<IScrollManager>(scrollManager);
+
+            var comp = RenderPagedDataGrid(parameters => parameters.Add(p => p.ScrollToTopOnPageChange, true));
+
+            await comp.InvokeAsync(() => comp.Instance.NavigateTo(Page.Next));
+
+            scrollManager.ScrollToTopCalls.Should().ContainSingle()
+                .Which.Selector.Should().BeNull();
+        }
+
+        /// <summary>
+        /// A grid with a fixed height scrolls its own container instead of the page.
+        /// </summary>
+        [Test]
+        public async Task DataGridScrollToTopOnPageChangeScrollsContainerWithHeight()
+        {
+            var scrollManager = new RecordingScrollManager();
+            Context.Services.AddSingleton<IScrollManager>(scrollManager);
+
+            var comp = RenderPagedDataGrid(parameters => parameters
+                .Add(p => p.ScrollToTopOnPageChange, true)
+                .Add(p => p.Height, "200px"));
+
+            var containerId = comp.Find(".mud-table-container").GetAttribute("id");
+            containerId.Should().NotBeNullOrEmpty();
+
+            await comp.InvokeAsync(() => comp.Instance.NavigateTo(Page.Next));
+
+            scrollManager.ScrollToTopCalls.Should().ContainSingle()
+                .Which.Selector.Should().Be($"#{containerId}");
+        }
+
+        /// <summary>
+        /// Changing the page size scrolls the grid only when it moves away from the page being shown.
+        /// </summary>
+        [Test]
+        public async Task DataGridScrollToTopOnPageChangeScrollsWhenPageSizeResetsThePage()
+        {
+            var scrollManager = new RecordingScrollManager();
+            Context.Services.AddSingleton<IScrollManager>(scrollManager);
+
+            var comp = RenderPagedDataGrid(parameters => parameters.Add(p => p.ScrollToTopOnPageChange, true));
+
+            // Already on the first page, so there is nothing to scroll back to.
+            await comp.InvokeAsync(() => comp.Instance.SetRowsPerPageAsync(4));
+            scrollManager.ScrollToTopCalls.Should().BeEmpty();
+
+            await comp.InvokeAsync(() => comp.Instance.NavigateTo(Page.Last));
+            await comp.InvokeAsync(() => comp.Instance.SetRowsPerPageAsync(5));
+
+            scrollManager.ScrollToTopCalls.Should().HaveCount(2);
+        }
+
+        /// <summary>
+        /// Renders a paged grid of twenty numbers with a single column.
+        /// </summary>
+        /// <param name="configure">Additional parameters applied to the grid.</param>
+        private IRenderedComponent<MudDataGrid<int>> RenderPagedDataGrid(Action<ComponentParameterCollectionBuilder<MudDataGrid<int>>> configure = null)
+        {
+            return Context.Render<MudDataGrid<int>>(parameters =>
+            {
+                parameters
+                    .Add(p => p.Items, Enumerable.Range(0, 20).ToList())
+                    .Add(p => p.RowsPerPage, 10)
+                    .Add(p => p.Columns, builder =>
+                    {
+                        builder.OpenComponent<PropertyColumn<int, int>>(0);
+                        builder.AddAttribute(1, nameof(PropertyColumn<int, int>.Property), (Expression<Func<int, int>>)(x => x));
+                        builder.CloseComponent();
+                    });
+
+                configure?.Invoke(parameters);
+            });
+        }
+
+        /// <summary>
+        /// Records the scroll-to-top calls made by the component under test.
+        /// </summary>
+        private sealed class RecordingScrollManager : IScrollManager
+        {
+            public List<(string Selector, ScrollBehavior ScrollBehavior)> ScrollToTopCalls { get; } = [];
+
+            public ValueTask ScrollToTopAsync(string id, ScrollBehavior scrollBehavior = ScrollBehavior.Auto)
+            {
+                ScrollToTopCalls.Add((id, scrollBehavior));
+
+                return ValueTask.CompletedTask;
+            }
+
+            public ValueTask ScrollToAsync(string id, int left, int top, ScrollBehavior scrollBehavior) => ValueTask.CompletedTask;
+
+            public ValueTask ScrollIntoViewAsync(string selector, ScrollBehavior behavior) => ValueTask.CompletedTask;
+
+            public ValueTask ScrollToYearAsync(string elementId) => ValueTask.CompletedTask;
+
+            public ValueTask ScrollToListItemAsync(string elementId) => ValueTask.CompletedTask;
+
+            public ValueTask LockScrollAsync(string selector = "body", string cssClass = "scroll-locked") => ValueTask.CompletedTask;
+
+            public ValueTask UnlockScrollAsync(string selector = "body", string cssClass = "scroll-locked") => ValueTask.CompletedTask;
+
+            public ValueTask ScrollToBottomAsync(string elementId, ScrollBehavior scrollBehavior = ScrollBehavior.Auto) => ValueTask.CompletedTask;
+
+            public ValueTask ScrollToVirtualizedItemAsync(string containerId, int itemIndex, double itemHeight, string targetItemId, ScrollBehavior scrollBehavior = ScrollBehavior.Auto) => ValueTask.CompletedTask;
         }
     }
 }
