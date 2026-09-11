@@ -83,6 +83,32 @@ namespace MudBlazor.UnitTests.Components
 
             comp.Find("nav").GetAttribute("aria-label").Should().Be("Reports");
         }
+
+        /// <summary>
+        /// IconSize forwards to the leading icon only, leaving the expand chevron at its default size.
+        /// </summary>
+        [Test]
+        public void NavGroup_IconSize_AppliesSizeClass()
+        {
+            var comp = Context.Render<MudNavGroup>(parameters => parameters
+                .Add(p => p.Icon, Icons.Material.Filled.Home)
+                .Add(p => p.IconSize, Size.Large));
+
+            comp.Find("svg.mud-nav-link-icon").ClassList.Should().Contain("mud-icon-size-large");
+            comp.Find("svg.mud-nav-link-expand-icon").ClassList.Should().Contain("mud-icon-size-medium");
+        }
+
+        /// <summary>
+        /// An unset IconSize keeps the medium icon that groups rendered before the parameter existed.
+        /// </summary>
+        [Test]
+        public void NavGroup_IconSize_DefaultsToMedium()
+        {
+            var comp = Context.Render<MudNavGroup>(parameters => parameters
+                .Add(p => p.Icon, Icons.Material.Filled.Home));
+
+            comp.Find("svg.mud-nav-link-icon").ClassList.Should().Contain("mud-icon-size-medium");
+        }
     }
 }
 

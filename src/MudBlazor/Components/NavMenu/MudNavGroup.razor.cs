@@ -121,6 +121,16 @@ namespace MudBlazor
         public Color IconColor { get; set; } = Color.Default;
 
         /// <summary>
+        /// The size of the icon when <see cref="Icon"/> is set.
+        /// </summary>
+        /// <remarks>
+        /// Defaults to <see cref="Size.Medium"/>.
+        /// </remarks>
+        [Parameter]
+        [Category(CategoryTypes.NavMenu.Appearance)]
+        public Size IconSize { get; set; } = Size.Medium;
+
+        /// <summary>
         /// Prevents the user from interacting with this group.
         /// </summary>
         /// <remarks>
