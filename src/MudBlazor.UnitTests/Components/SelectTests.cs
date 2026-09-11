@@ -235,6 +235,54 @@ namespace MudBlazor.UnitTests.Components
         }
 
         /// <summary>
+        /// Holding Shift while typing must still drive quick search, matching a native select and the ARIA listbox type-ahead pattern.
+        /// </summary>
+        [Test]
+        public async Task Select_KeyDown_WithShift_RunsQuickSearch()
+        {
+            var timeProvider = Context.AddFakeTimeProvider();
+            var keyInterceptorService = Context.AddKeyInterceptorService();
+            var comp = Context.Render<SelectFocusAndTypeTest>();
+            var select = comp.FindComponent<MudSelect<string>>();
+
+            // Shift+N must register instead of being discarded, so N-E-W builds "new" and lands on New Hampshire.
+            await comp.InvokeAsync(() => keyInterceptorService.OnKeyDown(select.Instance.ElementId, new KeyboardEventArgs { Key = "N", ShiftKey = true, Type = "keydown" }));
+            await comp.WaitForAssertionAsync(() => select.Instance.ReadValue.Should().Be("Nebraska"));
+            await comp.InvokeAsync(() => keyInterceptorService.OnKeyDown(select.Instance.ElementId, new KeyboardEventArgs { Key = "e", Type = "keydown" }));
+            await comp.InvokeAsync(() => keyInterceptorService.OnKeyDown(select.Instance.ElementId, new KeyboardEventArgs { Key = "w", Type = "keydown" }));
+            await comp.WaitForAssertionAsync(() => select.Instance.ReadValue.Should().Be("New Hampshire"));
+
+            // Shift+A must reach quick search rather than being swallowed by the select-all handler.
+            timeProvider.Advance(select.Instance.QuickSearchInterval + TimeSpan.FromMilliseconds(10));
+            await comp.InvokeAsync(() => keyInterceptorService.OnKeyDown(select.Instance.ElementId, new KeyboardEventArgs { Key = "A", ShiftKey = true, Type = "keydown" }));
+            await comp.WaitForAssertionAsync(() => select.Instance.ReadValue.Should().Be("Alabama"));
+        }
+
+        /// <summary>
+        /// Ctrl, Alt, and Meta must keep suppressing quick search so only the Shift behavior changed.
+        /// </summary>
+        [Test]
+        public async Task Select_KeyDown_WithOtherModifiers_SkipsQuickSearch()
+        {
+            var keyInterceptorService = Context.AddKeyInterceptorService();
+            var comp = Context.Render<SelectFocusAndTypeTest>();
+            var select = comp.FindComponent<MudSelect<string>>();
+
+            await comp.InvokeAsync(() => keyInterceptorService.OnKeyDown(select.Instance.ElementId, new KeyboardEventArgs { Key = "n", CtrlKey = true, Type = "keydown" }));
+            await comp.InvokeAsync(() => keyInterceptorService.OnKeyDown(select.Instance.ElementId, new KeyboardEventArgs { Key = "n", AltKey = true, Type = "keydown" }));
+            await comp.InvokeAsync(() => keyInterceptorService.OnKeyDown(select.Instance.ElementId, new KeyboardEventArgs { Key = "n", MetaKey = true, Type = "keydown" }));
+            // The "a" key is owned by the select-all handler, which does nothing here because this select is single selection.
+            await comp.InvokeAsync(() => keyInterceptorService.OnKeyDown(select.Instance.ElementId, new KeyboardEventArgs { Key = "a", CtrlKey = true, Type = "keydown" }));
+            await comp.InvokeAsync(() => keyInterceptorService.OnKeyDown(select.Instance.ElementId, new KeyboardEventArgs { Key = "a", AltKey = true, Type = "keydown" }));
+            await comp.InvokeAsync(() => keyInterceptorService.OnKeyDown(select.Instance.ElementId, new KeyboardEventArgs { Key = "A", ShiftKey = true, CtrlKey = true, Type = "keydown" }));
+            select.Instance.ReadValue.Should().BeNullOrEmpty();
+
+            // An unmodified key still searches, which proves the assertions above were not passing on a dead harness.
+            await comp.InvokeAsync(() => keyInterceptorService.OnKeyDown(select.Instance.ElementId, new KeyboardEventArgs { Key = "n", Type = "keydown" }));
+            await comp.WaitForAssertionAsync(() => select.Instance.ReadValue.Should().Be("Nebraska"));
+        }
+
+        /// <summary>
         /// Click should not close the menu and selecting multiple values should update the bindable value with a comma separated list.
         /// </summary>
         [Test]
