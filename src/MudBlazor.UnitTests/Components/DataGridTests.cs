@@ -4405,6 +4405,169 @@ namespace MudBlazor.UnitTests.Components
             button.GetAttribute("aria-label").Should().Be("Collapse group");
         }
 
+        /// <summary>
+        /// Builds a grid with a hierarchy column, a select column and detail content, which is the composition <c>RowClickExpand</c> applies to.
+        /// </summary>
+        /// <param name="rowClickExpand">The value given to <c>RowClickExpand</c>.</param>
+        /// <param name="items">The rows to display.</param>
+        /// <param name="rowClick">An optional handler for the grid's <c>RowClick</c> event.</param>
+        private IRenderedComponent<MudDataGrid<TestDataItem>> RenderHierarchyGrid(bool rowClickExpand, List<TestDataItem> items, Action<DataGridRowClickEventArgs<TestDataItem>> rowClick = null)
+        {
+            return Context.Render<MudDataGrid<TestDataItem>>(parameters =>
+            {
+                parameters
+                    .Add(p => p.Items, items)
+                    .Add(p => p.MultiSelection, true)
+                    .Add(p => p.RowClickExpand, rowClickExpand)
+                    .Add(p => p.Columns, HierarchyAndSelectColumns)
+                    .Add(p => p.ChildRowContent, (RenderFragment<CellContext<TestDataItem>>)(context => builder =>
+                    {
+                        builder.OpenElement(0, "span");
+                        builder.AddAttribute(1, "class", "detail-content");
+                        builder.AddContent(2, context.Item.Name);
+                        builder.CloseElement();
+                    }));
+
+                if (rowClick is not null)
+                {
+                    parameters.Add(p => p.RowClick, rowClick);
+                }
+            });
+        }
+
+        private static RenderFragment HierarchyAndSelectColumns => builder =>
+        {
+            builder.OpenComponent<HierarchyColumn<TestDataItem>>(0);
+            builder.AddAttribute(1, nameof(HierarchyColumn<TestDataItem>.ButtonDisabledFunc), (Func<TestDataItem, bool>)(item => item.ShouldBeDisabled));
+            builder.CloseComponent();
+            builder.OpenComponent<SelectColumn<TestDataItem>>(2);
+            builder.CloseComponent();
+            builder.OpenComponent<PropertyColumn<TestDataItem, string>>(3);
+            builder.AddAttribute(4, nameof(PropertyColumn<TestDataItem, string>.Property), (Expression<Func<TestDataItem, string>>)(x => x.Name));
+            builder.CloseComponent();
+            builder.OpenComponent<TemplateColumn<TestDataItem>>(5);
+            builder.AddAttribute(6, nameof(TemplateColumn<TestDataItem>.CellTemplate), (RenderFragment<CellContext<TestDataItem>>)(_ => cellBuilder =>
+            {
+                cellBuilder.OpenComponent<MudButton>(0);
+                cellBuilder.AddAttribute(1, nameof(MudButton.Class), "row-action");
+                cellBuilder.AddAttribute(2, nameof(MudButton.ChildContent), (RenderFragment)(contentBuilder => contentBuilder.AddContent(0, "Edit")));
+                cellBuilder.CloseComponent();
+            }));
+            builder.CloseComponent();
+        };
+
+        /// <summary>
+        /// Without <c>RowClickExpand</c> a row click leaves the hierarchy closed and only the expand button opens it.
+        /// </summary>
+        [Test]
+        public async Task RowClickExpand_Default_LeavesHierarchyToTheButton()
+        {
+            var items = new List<TestDataItem> { new() { Id = 1, Name = "First" }, new() { Id = 2, Name = "Second" } };
+
+            var comp = RenderHierarchyGrid(rowClickExpand: false, items);
+
+            comp.Instance.RowClickExpand.Should().BeFalse();
+
+            await comp.FindAll("tbody tr")[0].ClickAsync();
+            comp.FindAll(".detail-content").Should().BeEmpty();
+
+            await comp.FindAll("tbody tr button.mud-icon-button")[0].ClickAsync();
+            comp.FindAll(".detail-content").Should().ContainSingle();
+        }
+
+        /// <summary>
+        /// With <c>RowClickExpand</c> a row click opens and closes that row's detail content (#11850).
+        /// </summary>
+        [Test]
+        public async Task RowClickExpand_True_TogglesDetailOnRowClick()
+        {
+            var items = new List<TestDataItem> { new() { Id = 1, Name = "First" }, new() { Id = 2, Name = "Second" } };
+
+            var comp = RenderHierarchyGrid(rowClickExpand: true, items);
+
+            await comp.FindAll("tbody tr")[0].ClickAsync();
+            comp.FindAll(".detail-content").Should().ContainSingle().Which.TextContent.Should().Be("First");
+
+            await comp.FindAll("tbody tr")[0].ClickAsync();
+            comp.FindAll(".detail-content").Should().BeEmpty();
+        }
+
+        /// <summary>
+        /// With <c>RowClickExpand</c> the expand button still toggles exactly once because its click does not reach the row (#11850).
+        /// </summary>
+        [Test]
+        public async Task RowClickExpand_True_KeepsExpandButtonWorking()
+        {
+            var items = new List<TestDataItem> { new() { Id = 1, Name = "First" }, new() { Id = 2, Name = "Second" } };
+
+            var comp = RenderHierarchyGrid(rowClickExpand: true, items);
+
+            await comp.FindAll("tbody tr button.mud-icon-button")[0].ClickAsync();
+            comp.FindAll(".detail-content").Should().ContainSingle();
+
+            await comp.FindAll("tbody tr button.mud-icon-button")[0].ClickAsync();
+            comp.FindAll(".detail-content").Should().BeEmpty();
+        }
+
+        /// <summary>
+        /// With <c>RowClickExpand</c> interactive cell content such as a select checkbox or an action button does not expand the row (#11850).
+        /// </summary>
+        [Test]
+        public async Task RowClickExpand_True_IgnoresInteractiveCellContent()
+        {
+            var items = new List<TestDataItem> { new() { Id = 1, Name = "First" }, new() { Id = 2, Name = "Second" } };
+
+            var comp = RenderHierarchyGrid(rowClickExpand: true, items);
+
+            await comp.FindAll("tbody .mud-checkbox input")[0].ChangeAsync(new ChangeEventArgs { Value = true });
+
+            comp.Instance.GetState(x => x.SelectedItems).Should().Contain(items[0]);
+            comp.FindAll(".detail-content").Should().BeEmpty();
+
+            await comp.FindAll("tbody button.row-action")[0].ClickAsync();
+
+            comp.FindAll(".detail-content").Should().BeEmpty();
+        }
+
+        /// <summary>
+        /// With <c>RowClickExpand</c> a row whose expand button is disabled is not expanded by a row click (#11850).
+        /// </summary>
+        [Test]
+        public async Task RowClickExpand_True_IgnoresRowsWithDisabledButton()
+        {
+            var items = new List<TestDataItem>
+            {
+                new() { Id = 1, Name = "First", ShouldBeDisabled = true },
+                new() { Id = 2, Name = "Second" }
+            };
+
+            var comp = RenderHierarchyGrid(rowClickExpand: true, items);
+
+            await comp.FindAll("tbody tr")[0].ClickAsync();
+            comp.FindAll(".detail-content").Should().BeEmpty();
+
+            await comp.FindAll("tbody tr")[1].ClickAsync();
+            comp.FindAll(".detail-content").Should().ContainSingle().Which.TextContent.Should().Be("Second");
+        }
+
+        /// <summary>
+        /// With <c>RowClickExpand</c> a row click still raises <c>RowClick</c> and still updates the selection (#11850).
+        /// </summary>
+        [Test]
+        public async Task RowClickExpand_True_KeepsRowClickAndSelection()
+        {
+            var items = new List<TestDataItem> { new() { Id = 1, Name = "First" }, new() { Id = 2, Name = "Second" } };
+            var rowClicks = 0;
+
+            var comp = RenderHierarchyGrid(rowClickExpand: true, items, _ => rowClicks++);
+
+            await comp.FindAll("tbody tr")[0].ClickAsync();
+
+            rowClicks.Should().Be(1);
+            comp.Instance.GetState(x => x.SelectedItems).Should().Contain(items[0]);
+            comp.FindAll(".detail-content").Should().ContainSingle();
+        }
+
         [Test]
         public void DataGridChildRowContent()
         {

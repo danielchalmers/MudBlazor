@@ -1453,6 +1453,18 @@ namespace MudBlazor
         public bool ExpandSingleRow { get; set; }
 
         /// <summary>
+        /// Expands or collapses a row's hierarchy when the row is clicked.
+        /// </summary>
+        /// <remarks>
+        /// Defaults to <c>false</c>.  This only has an effect when a <see cref="HierarchyColumn{T}"/> is used, and it does not replace the
+        /// column's expand button.  Clicks on interactive cell content such as buttons and checkboxes do not reach the row, so they never
+        /// toggle the hierarchy.  <see cref="RowClick"/> and row selection behave the same either way.
+        /// </remarks>
+        [Parameter]
+        [Category(CategoryTypes.DataGrid.Behavior)]
+        public bool RowClickExpand { get; set; }
+
+        /// <summary>
         /// The comparer used to determine row selection.
         /// </summary>
         /// <remarks>
@@ -2523,7 +2535,7 @@ namespace MudBlazor
 
         /// <summary>
         /// Applies the row-level side effects that should occur on any click interaction with a row
-        /// or one of its cells: edit activation (when configured) and selection update.
+        /// or one of its cells: edit activation (when configured), selection update, and hierarchy expansion.
         /// Both <see cref="OnRowClickedAsync"/> and <see cref="OnCellClickedAsync"/> delegate here
         /// so that new row-click behaviors only need to be added in one place.
         /// </summary>
@@ -2535,6 +2547,11 @@ namespace MudBlazor
                     await BeginCellEditAsync(item);
                 else
                     await SetEditingItemAsync(item);
+            }
+
+            if (RowClickExpand && HasHierarchyColumn && !(_buttonDisabledFunc?.Invoke(item) ?? false))
+            {
+                await ToggleHierarchyVisibilityAsync(item);
             }
 
             await SetSelectedItemAsync(item);
