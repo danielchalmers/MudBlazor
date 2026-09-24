@@ -1395,7 +1395,7 @@ namespace MudBlazor
                     StateHasChanged();
                 }
             }
-            else if (!args.ShiftKey && !args.AltKey && !args.MetaKey)
+            else if (!args.AltKey && !args.MetaKey)
             {
                 await SelectFirstItem(args.Key.ToLowerInvariant());
                 await FocusAsync();
@@ -1404,7 +1404,7 @@ namespace MudBlazor
 
         private async Task HandleCharacterSearchAsync(KeyboardEventArgs args)
         {
-            if (args.CtrlKey || args.ShiftKey || args.AltKey || args.MetaKey)
+            if (args.CtrlKey || args.AltKey || args.MetaKey)
             {
                 return;
             }
