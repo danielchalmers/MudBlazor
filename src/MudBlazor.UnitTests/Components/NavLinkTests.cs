@@ -166,5 +166,49 @@ namespace MudBlazor.UnitTests.Components
 
             AlertText().InnerHtml.Should().Be("Oh my! We caught an error and handled it!");
         }
+
+        /// <summary>
+        /// IconSize forwards to the leading icon, which renders the matching size class.
+        /// </summary>
+        [TestCase(Size.Small, "mud-icon-size-small")]
+        [TestCase(Size.Medium, "mud-icon-size-medium")]
+        [TestCase(Size.Large, "mud-icon-size-large")]
+        public void NavLink_IconSize_AppliesSizeClass(Size size, string expectedClass)
+        {
+            var comp = Context.Render<MudNavLink>(parameters => parameters
+                .Add(x => x.Href, "/dashboard")
+                .Add(x => x.Icon, Icons.Material.Filled.Home)
+                .Add(x => x.IconSize, size));
+
+            comp.Find("svg.mud-nav-link-icon").ClassList.Should().Contain(expectedClass);
+        }
+
+        /// <summary>
+        /// An unset IconSize keeps the medium icon that links rendered before the parameter existed.
+        /// </summary>
+        [Test]
+        public void NavLink_IconSize_DefaultsToMedium()
+        {
+            var comp = Context.Render<MudNavLink>(parameters => parameters
+                .Add(x => x.Href, "/dashboard")
+                .Add(x => x.Icon, Icons.Material.Filled.Home));
+
+            comp.Find("svg.mud-nav-link-icon").ClassList.Should().Contain("mud-icon-size-medium");
+        }
+
+        /// <summary>
+        /// IconSize also reaches the icon on the OnClick branch, which renders no anchor.
+        /// </summary>
+        [Test]
+        public void NavLink_IconSize_AppliesOnClickBranch()
+        {
+            var comp = Context.Render<MudNavLink>(parameters => parameters
+                .Add(x => x.OnClick, (MouseEventArgs _) => { })
+                .Add(x => x.Icon, Icons.Material.Filled.Home)
+                .Add(x => x.IconSize, Size.Large));
+
+            comp.FindAll("a").Should().BeEmpty();
+            comp.Find("svg.mud-nav-link-icon").ClassList.Should().Contain("mud-icon-size-large");
+        }
     }
 }

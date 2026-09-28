@@ -17,7 +17,7 @@
             aria-label="@Localizer[LanguageResource.MudNavGroup_ToggleExpand, Title ?? _navigationContext.MenuId]">
         @if (!string.IsNullOrEmpty(Icon))
         {
-            <MudIcon Disabled="@Disabled" Icon="@Icon" Color="@IconColor" Class="@IconClassname" />
+            <MudIcon Disabled="@Disabled" Icon="@Icon" Color="@IconColor" Size="@IconSize" Class="@IconClassname" />
         }
         <div Class="mud-nav-link-text">
             @if (TitleContent is not null)
