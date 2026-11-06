@@ -13,15 +13,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # One job running the builds in sequence: macOS arm64 runners are scarce, so parallel jobs can sit unassigned.
   simulator:
-    name: ${{ matrix.config }} ${{ matrix.mode }}
     runs-on: macos-26
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        config: [Debug, Release]
-        mode: [aot, interpreter]
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v7
 
@@ -40,28 +35,43 @@ jobs:
           dotnet --version
           dotnet workload list
 
-      - name: Run cases
+      - name: Debug, full AOT
         env:
-          CONFIG: ${{ matrix.config }}
-        run: |
-          if [ "${{ matrix.mode }}" = interpreter ]; then
-            bash run-sim.sh -p:MtouchInterpreter=all
-          else
-            bash run-sim.sh
-          fi
+          CONFIG: Debug
+          LOG_DIR: logs/debug-aot
+        run: bash run-sim.sh
 
-      # The interpreter run is the control; a failure there means the harness is broken, not Mono.
+      - name: Release, full AOT
+        if: success() || failure()
+        env:
+          CONFIG: Release
+          LOG_DIR: logs/release-aot
+        run: bash run-sim.sh
+
+      # The control. The interpreter changes what gets AOT-compiled, so start from a clean build.
+      - name: Debug, interpreter
+        if: success() || failure()
+        env:
+          CONFIG: Debug
+          LOG_DIR: logs/debug-interpreter
+        run: |
+          rm -rf Issue14134.Ios/bin Issue14134.Ios/obj Issue14134.Shapes/bin Issue14134.Shapes/obj
+          bash run-sim.sh -p:MtouchInterpreter=all
+
+      # A failure here means the harness is broken, not Mono.
       - name: Check control
-        if: matrix.mode == 'interpreter'
-        run: "! grep -q FAIL logs/summary.md"
+        if: success() || failure()
+        run: "! grep -q FAIL logs/debug-interpreter/summary.md"
 
       - name: Collect crash reports
         if: always()
-        run: cp ~/Library/Logs/DiagnosticReports/Issue14134* logs/ 2>/dev/null || true
+        run: |
+          mkdir -p logs/crash-reports
+          cp ~/Library/Logs/DiagnosticReports/Issue14134* logs/crash-reports/ 2>/dev/null || true
 
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: logs-${{ matrix.config }}-${{ matrix.mode }}
+          name: logs
           path: logs/
           if-no-files-found: ignore

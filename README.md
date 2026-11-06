@@ -2,7 +2,7 @@
 
 Investigation branch for [MudBlazor#14134](https://github.com/MudBlazor/MudBlazor/issues/14134), where moving a MudSlider crashes iOS apps built with Mono full AOT. It copies the shape of `MudSlider<T>.SetValueTextAsync` (9.12.0) with no MAUI, Blazor or MudBlazor, and runs each case in a fresh launch on an Apple Silicon simulator.
 
-The workflow runs Debug and Release, each under full AOT and with the interpreter as a control. Results are in each job's summary; logs and crash reports are in the artifacts.
+The workflow builds Debug and Release under full AOT, then Debug with the interpreter as a control, in one job. Results are in the job summary; logs and crash reports are in the artifact.
 
 | Case | What it isolates |
 | --- | --- |

@@ -14,7 +14,8 @@ fi
 
 config=${CONFIG:-Debug}
 cases=(svm-async-int svm-async-double svm-async-int-direct nosvm-async-int svm-sync-int nosvm-sync-int)
-mkdir -p logs
+logs=${LOG_DIR:-logs}
+mkdir -p "$logs"
 
 dotnet build Issue14134.Ios/Issue14134.Ios.csproj -c "$config" -r iossimulator-arm64 "$@"
 app="Issue14134.Ios/bin/$config/net10.0-ios/iossimulator-arm64/Issue14134.Ios.app"
@@ -27,25 +28,25 @@ xcrun simctl boot "$device" 2>/dev/null || true
 xcrun simctl bootstatus "$device" -b >/dev/null
 xcrun simctl install "$device" "$app"
 
-summary=logs/summary.md
+summary=$logs/summary.md
 printf '| Case | Result | Detail |\n| --- | --- | --- |\n' > "$summary"
 for c in "${cases[@]}"; do
   # perl's alarm stands in for timeout(1), which macOS lacks.
   SIMCTL_CHILD_I14134_CASE="$c" perl -e 'alarm shift; exec @ARGV' 180 \
-    xcrun simctl launch --console --terminate-running-process "$device" "$bundle" > "logs/$c.log" 2>&1 || true
-  if grep -q "I14134 ok $c" "logs/$c.log"; then
+    xcrun simctl launch --console --terminate-running-process "$device" "$bundle" > "$logs/$c.log" 2>&1 || true
+  if grep -q "I14134 ok $c" "$logs/$c.log"; then
     result=pass
     detail=
   else
     result=FAIL
-    detail=$(grep -m1 -E 'Assertion|Attempting to JIT|I14134 error' "logs/$c.log" | cut -c1-300 || true)
+    detail=$(grep -m1 -E 'Assertion|Attempting to JIT|I14134 error' "$logs/$c.log" | cut -c1-300 || true)
   fi
   echo "$c: $result${detail:+ - $detail}"
   echo "| \`$c\` | $result | ${detail//|/\\|} |" >> "$summary"
 done
 
-runtime=$(grep -h -m1 'I14134 runtime' logs/*.log | head -1 || true)
+runtime=$(grep -h -m1 'I14134 runtime' "$logs"/*.log | head -1 || true)
 echo "${runtime:-No runtime line: the app never reached the case runner.}"
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
-  { echo "### $config $*"; echo; echo "${runtime:-No runtime line}"; echo; cat "$summary"; } >> "$GITHUB_STEP_SUMMARY"
+  { echo "### $config ${*:-full AOT}"; echo; echo "${runtime:-No runtime line}"; echo; cat "$summary"; } >> "$GITHUB_STEP_SUMMARY"
 fi
