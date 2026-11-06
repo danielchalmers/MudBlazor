@@ -21,8 +21,14 @@ dotnet build Issue14134.Ios/Issue14134.Ios.csproj -c "$config" -r iossimulator-a
 app="Issue14134.Ios/bin/$config/net10.0-ios/iossimulator-arm64/Issue14134.Ios.app"
 bundle=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Info.plist")
 
-# Newest runtime's last iPhone, unless SIM_DEVICE is set.
-device=${SIM_DEVICE:-$(xcrun simctl list devices available | grep 'iPhone' | tail -1 | grep -oE '[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}')}
+# A plain numbered iPhone, unless SIM_DEVICE is set; "iPhone Duo" shut down on every launch. Plain statements because macOS runs bash 3.2.
+device=${SIM_DEVICE:-}
+if [ -z "$device" ]; then
+  iphones=$(xcrun simctl list devices available | grep 'iPhone' || true)
+  pick=$(echo "$iphones" | grep -E '^ +iPhone [0-9]+ [(]' | tail -1 || true)
+  [ -n "$pick" ] || pick=$(echo "$iphones" | tail -1)
+  device=$(echo "$pick" | grep -oE '[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}')
+fi
 echo "Simulator: $(xcrun simctl list devices available | grep "$device" | xargs)"
 xcrun simctl boot "$device" 2>/dev/null || true
 xcrun simctl bootstatus "$device" -b >/dev/null
@@ -34,16 +40,18 @@ for c in "${cases[@]}"; do
   # perl's alarm stands in for timeout(1), which macOS lacks.
   SIMCTL_CHILD_I14134_CASE="$c" perl -e 'alarm shift; exec @ARGV' 180 \
     xcrun simctl launch --console --terminate-running-process "$device" "$bundle" > "$logs/$c.log" 2>&1 || true
+  # The console relay sometimes drops the app's output, even its last line before exiting normally; the simulator's unified log keeps it.
+  if ! grep -q "I14134 ok $c" "$logs/$c.log"; then
+    pid=$(grep -oE "^$bundle: [0-9]+" "$logs/$c.log" | grep -oE '[0-9]+$' | tail -1 || true)
+    if [ -n "$pid" ]; then
+      { echo "--- unified log for pid $pid"; xcrun simctl spawn "$device" log show --style compact --last 5m --predicate "processID == $pid"; } >> "$logs/$c.log" 2>&1 || true
+    fi
+  fi
   if grep -q "I14134 ok $c" "$logs/$c.log"; then
     result=pass
     detail=
   else
     result=FAIL
-    # The console relay drops output when the app aborts; the simulator's unified log keeps it.
-    pid=$(grep -oE "^$bundle: [0-9]+" "$logs/$c.log" | grep -oE '[0-9]+$' | tail -1 || true)
-    if [ -n "$pid" ]; then
-      { echo "--- unified log for pid $pid"; xcrun simctl spawn "$device" log show --style compact --last 5m --predicate "processID == $pid"; } >> "$logs/$c.log" 2>&1 || true
-    fi
     detail=$(grep -m1 -E 'Assertion|Attempting to JIT|I14134 error' "$logs/$c.log" | cut -c1-300 || true)
   fi
   echo "$c: $result${detail:+ - $detail}"

@@ -28,16 +28,21 @@ When Mono hasn't compiled `MudSlider<T>` for the concrete `T`, it runs shared ge
 
 ## Minimal repro
 
-`ios-aot-repro.yml` copies the shape of `MudSlider<T>.SetValueTextAsync` with no MAUI, Blazor or MudBlazor, and runs each case in a fresh launch. On runtime 10.0.14 every case passed in Debug and Release full AOT; an earlier run's two failures were launch flakes that died before any app code ran.
+`ios-aot-repro.yml` copies the shape of `MudSlider<T>.SetValueTextAsync` with no MAUI, Blazor or MudBlazor, and runs each case in a fresh launch on runtime 10.0.14.
 
-| Case | What it isolates |
-| --- | --- |
-| `svm-async-int` | Slider shape: async over struct `T`, `T.TryParse`, reached through a Blazor-style binder and `DynamicInvoke` |
-| `svm-async-double` | Same with `double` |
-| `svm-async-int-direct` | Same method called through the delegate directly, no binder |
-| `nosvm-async-int` | Candidate fix 2: async over `T` without the static abstract call |
-| `svm-sync-int` | Candidate fix 1: static abstract call, no async state machine over `T` |
-| `nosvm-sync-int` | Both fixes together |
+| Case | What it isolates | Full AOT |
+| --- | --- | --- |
+| `svm-async-int` | Slider shape: async over struct `T`, `T.TryParse`, reached through a Blazor-style binder and `DynamicInvoke` | Passes |
+| `svm-async-double` | Same with `double` | Passes |
+| `svm-async-int-direct` | Same method called through the delegate directly, no binder | Passes |
+| `nosvm-async-int` | Async over `T` without the static abstract call | Passes |
+| `svm-sync-int` | Static abstract call, no async state machine over `T` | Passes |
+| `nosvm-sync-int` | Neither | Passes |
+| `svm-async-long-shared` | Slider shape, but the closed type is only a type argument to a shared generic method called from the app, like `OpenComponent<MudSlider<double>>` | Crashes in Debug and Release |
+| `nosvm-async-long-shared` | Same reach, no `T.TryParse` | Passes |
+| `sat-async-long-shared` | Same reach, `double.TryParse` then `T.CreateSaturating` (the fix) | Passes |
+
+The first six pass because `typeof(SvmAsyncHolder<int>)` in the library lets the AOT compiler see the closed types. Everything passes with the interpreter.
 
 `Issue14134.Shapes` always builds with `Optimize=true`, because MudBlazor ships optimized and that makes its async state machines structs.
 
