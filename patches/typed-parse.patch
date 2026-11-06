@@ -1,0 +1,53 @@
+diff --git a/src/MudBlazor/Components/Slider/MudSlider.razor.cs b/src/MudBlazor/Components/Slider/MudSlider.razor.cs
+index 2ae558812..abf32d468 100644
+--- a/src/MudBlazor/Components/Slider/MudSlider.razor.cs
++++ b/src/MudBlazor/Components/Slider/MudSlider.razor.cs
+@@ -265,13 +265,47 @@ namespace MudBlazor
+ 
+         private async Task SetValueTextAsync(string? text)
+         {
+-            if (T.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
++            if (TryParseValueText(text, out var result))
+             {
+                 await _valueState.SetValueAsync(result);
+                 await _nullableValueState.SetValueAsync(result);
+             }
+         }
+ 
++        // Mono full AOT on iOS crashes calling T.TryParse from shared generic code, so the built-in number types are parsed directly.
++        private static bool TryParseValueText(string? text, out T result)
++        {
++            var styles = NumberStyles.Any;
++            var culture = CultureInfo.InvariantCulture;
++            object? parsed = Type.GetTypeCode(typeof(T)) switch
++            {
++                TypeCode.SByte => sbyte.TryParse(text, styles, culture, out var sb) ? sb : null,
++                TypeCode.Byte => byte.TryParse(text, styles, culture, out var b) ? b : null,
++                TypeCode.Int16 => short.TryParse(text, styles, culture, out var s) ? s : null,
++                TypeCode.UInt16 => ushort.TryParse(text, styles, culture, out var us) ? us : null,
++                TypeCode.Int32 => int.TryParse(text, styles, culture, out var i) ? i : null,
++                TypeCode.UInt32 => uint.TryParse(text, styles, culture, out var ui) ? ui : null,
++                TypeCode.Int64 => long.TryParse(text, styles, culture, out var l) ? l : null,
++                TypeCode.UInt64 => ulong.TryParse(text, styles, culture, out var ul) ? ul : null,
++                TypeCode.Single => float.TryParse(text, styles, culture, out var f) ? f : null,
++                TypeCode.Double => double.TryParse(text, styles, culture, out var d) ? d : null,
++                TypeCode.Decimal => decimal.TryParse(text, styles, culture, out var m) ? m : null,
++                _ => TryParseGeneric(text, out var other) ? other : null,
++            };
++
++            if (parsed is T value)
++            {
++                result = value;
++                return true;
++            }
++
++            result = default;
++            return false;
++        }
++
++        private static bool TryParseGeneric(string? text, out T result) =>
++            T.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out result);
++
+         private Task OnValueParameterChangedAsync(ParameterChangedEventArgs<T> arg)
+         {
+             if (_nullableValueResetToDefault)

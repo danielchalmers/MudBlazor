@@ -12,13 +12,15 @@ Both runtimes crash under full AOT in every case, with `Attempting to JIT compil
 
 ## Patches
 
-`slider-patches.yml` builds MudBlazor 9.12.0 from source, applies one patch from `patches/`, swaps the assembly into the reporter's app, and runs the same cases on runtime 10.0.14 in Debug and Release full AOT.
+`slider-patches.yml` builds MudBlazor 9.12.0 from source with one patch from `patches/` and swaps the assembly into the reporter's app, or adds a file from `patches/app/` to the app. Each variant runs the same cases on runtime 10.0.14 in Debug and Release full AOT.
 
-| Patch | Change to `SetValueTextAsync` |
-| --- | --- |
-| `stock` | None; shows a source build still crashes |
-| `parse-helper` | Stays async; `T.TryParse` moves to a separate non-async method |
-| `sync-setter` | Not async; the second `SetValueAsync` is chained through a non-generic helper |
+| Variant | Change | Result |
+| --- | --- | --- |
+| `stock` | None; a source build of the tag | Crashes like the package |
+| `parse-helper` | `SetValueTextAsync` stays async; `T.TryParse` moves to a separate method | Crashes; Mono now tries to JIT that method |
+| `sync-setter` | `SetValueTextAsync` isn't async; the second `SetValueAsync` is chained through a non-generic helper | No crash, but the app stops responding after the first input |
+| `typed-parse` | Built-in number types parse with their own `TryParse`; only other types reach `T.TryParse` | Pending |
+| `app-instantiate` | The app constructs `MudSlider<int>` and `MudSlider<double>` in a method it never calls, so Mono precompiles those types | Pending |
 
 ## Minimal repro
 

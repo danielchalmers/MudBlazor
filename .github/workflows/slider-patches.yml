@@ -17,17 +17,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Builds MudBlazor 9.12.0 from source with each patch, swaps the DLL into the reporter's app, and drives the slider under full AOT.
-  # `stock` builds the tag unpatched, so a pass for a patch can't come from building from source.
+  # A `mudblazor` patch builds MudBlazor 9.12.0 from source with it and swaps the DLL into the reporter's app; `stock` builds the tag unpatched.
+  # An `app` file is added to the reporter's app, which then uses the MudBlazor 9.12.0 package as is.
   # Runtime 10.0.13 and 10.0.14 both crash, so this uses the newer one.
+  # Earlier results: stock, parse-helper (T.TryParse in its own method) and sync-setter (no async) all fail; parse-helper JITs that method.
   patch:
-    name: ${{ matrix.patch }}
+    name: ${{ matrix.variant }}
     runs-on: xcode-27
     timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
-        patch: [stock, parse-helper, sync-setter]
+        include:
+          - variant: typed-parse
+            mudblazor: typed-parse
+          - variant: app-instantiate
+            app: AotRoots.cs
     steps:
       - uses: actions/checkout@v7
         with:
@@ -71,14 +76,20 @@ jobs:
           dotnet workload restore MudSliderHybridRepro.csproj
           dotnet workload list
 
-      - name: Build MudBlazor 9.12.0 (${{ matrix.patch }})
+      - name: Add ${{ matrix.app }} to the app
+        if: matrix.app
+        run: cp "patches/app/${{ matrix.app }}" reporter/
+
+      - name: Build MudBlazor 9.12.0 (${{ matrix.mudblazor }})
+        if: matrix.mudblazor
         run: |
-          if [ "${{ matrix.patch }}" != stock ]; then git -C mudblazor apply "$PWD/patches/${{ matrix.patch }}.patch"; fi
+          if [ "${{ matrix.mudblazor }}" != stock ]; then git -C mudblazor apply "$PWD/patches/${{ matrix.mudblazor }}.patch"; fi
           git -C mudblazor status --short
           dotnet build mudblazor/src/MudBlazor/MudBlazor.csproj -c Release -f net10.0 -p:SkipBunCompile=true -p:Version=9.12.0 --nologo
 
       # The package keeps its static web assets; only the assembly changes.
       - name: Swap it into the reporter's app
+        if: matrix.mudblazor
         working-directory: reporter
         run: |
           dotnet restore MudSliderHybridRepro.csproj -r iossimulator-arm64
@@ -90,7 +101,7 @@ jobs:
       - name: Debug, full AOT
         env:
           CONFIG: Debug
-          LABEL: ${{ matrix.patch }}
+          LABEL: ${{ matrix.variant }}
           LOG_DIR: ${{ github.workspace }}/logs/debug-aot
         run: bash run-reporter.sh
 
@@ -98,7 +109,7 @@ jobs:
         if: success() || failure()
         env:
           CONFIG: Release
-          LABEL: ${{ matrix.patch }}
+          LABEL: ${{ matrix.variant }}
           LOG_DIR: ${{ github.workspace }}/logs/release-aot
         run: bash run-reporter.sh
 
@@ -112,6 +123,6 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: patch-logs-${{ matrix.patch }}
+          name: patch-logs-${{ matrix.variant }}
           path: logs/
           if-no-files-found: ignore
