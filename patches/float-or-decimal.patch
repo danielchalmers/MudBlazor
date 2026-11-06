@@ -1,0 +1,41 @@
+diff --git a/src/MudBlazor/Components/Slider/MudSlider.razor.cs b/src/MudBlazor/Components/Slider/MudSlider.razor.cs
+index 2ae558812..b953d42e0 100644
+--- a/src/MudBlazor/Components/Slider/MudSlider.razor.cs
++++ b/src/MudBlazor/Components/Slider/MudSlider.razor.cs
+@@ -263,13 +263,33 @@ namespace MudBlazor
+ 
+         private string GetValueText => _valueState.Value.ToString(null, CultureInfo.InvariantCulture);
+ 
++        // Blazor names MudSlider<T> only as a type argument, so Mono full AOT on iOS runs it as shared generic code, which can't call T.TryParse.
++        // A range input's value is a JavaScript number, so floating-point types parse it as a double without loss.
++        // Other types parse it as a decimal, which keeps every digit of a long, ulong or decimal where a double keeps about 15.
+         private async Task SetValueTextAsync(string? text)
+         {
+-            if (T.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
++            T result;
++            if (typeof(T) == typeof(double) || typeof(T) == typeof(float) || typeof(T) == typeof(Half))
+             {
+-                await _valueState.SetValueAsync(result);
+-                await _nullableValueState.SetValueAsync(result);
++                if (!double.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var number))
++                {
++                    return;
++                }
++
++                result = T.CreateSaturating(number);
+             }
++            else
++            {
++                if (!decimal.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var number))
++                {
++                    return;
++                }
++
++                result = T.CreateSaturating(number);
++            }
++
++            await _valueState.SetValueAsync(result);
++            await _nullableValueState.SetValueAsync(result);
+         }
+ 
+         private Task OnValueParameterChangedAsync(ParameterChangedEventArgs<T> arg)
