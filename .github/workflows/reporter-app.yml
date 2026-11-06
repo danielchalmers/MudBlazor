@@ -1,0 +1,111 @@
+name: Reporter app on iOS AOT (MudBlazor#14134)
+
+on:
+  push:
+    branches: [ios-aot-repro-14134]
+    paths:
+      - run-reporter.sh
+      - .github/workflows/reporter-app.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The two workload sets pin the same iOS (27.1.10018) and MAUI (10.0.110) and differ only in Mono:
+  # 10.0.402.1 ships runtime 10.0.13, which the reporter crashed on; 10.0.403 ships 10.0.14.
+  reporter-app:
+    name: SDK ${{ matrix.sdk }}
+    runs-on: xcode-27
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - sdk: 10.0.402
+            workloads: 10.0.402.1
+          - sdk: 10.0.403
+            workloads: 10.0.403
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/checkout@v7
+        with:
+          repository: techscex/MudBlazorTestOne
+          ref: 1ceb091ea1f321fcb00a71d91a51b2db41e46a88
+          path: reporter
+          persist-credentials: false
+
+      - name: Pin SDK ${{ matrix.sdk }} and workload set ${{ matrix.workloads }}
+        run: |
+          cat > reporter/global.json <<EOF
+          {
+            "sdk": {
+              "version": "${{ matrix.sdk }}",
+              "rollForward": "disable",
+              "workloadVersion": "${{ matrix.workloads }}"
+            }
+          }
+          EOF
+          cat reporter/global.json
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: reporter/global.json
+
+      - name: Install workloads
+        working-directory: reporter
+        run: |
+          sudo xcode-select -s /Applications/Xcode_27.1.app
+          dotnet workload restore MudSliderHybridRepro.csproj
+          xcodebuild -version
+          dotnet --version
+          dotnet workload list
+
+      - name: Debug, full AOT
+        env:
+          CONFIG: Debug
+          LOG_DIR: ${{ github.workspace }}/logs/debug-aot
+        run: bash run-reporter.sh
+
+      - name: Release, full AOT
+        if: success() || failure()
+        env:
+          CONFIG: Release
+          LOG_DIR: ${{ github.workspace }}/logs/release-aot
+        run: bash run-reporter.sh
+
+      # The control. The interpreter changes what gets AOT-compiled, so start from a clean build.
+      - name: Debug, interpreter
+        if: success() || failure()
+        env:
+          CONFIG: Debug
+          LOG_DIR: ${{ github.workspace }}/logs/debug-interpreter
+        run: |
+          rm -rf reporter/bin reporter/obj
+          bash run-reporter.sh -p:MtouchInterpreter=all
+
+      # A failure here means the harness is broken, not Mono.
+      - name: Check control
+        if: success() || failure()
+        run: "! grep -qE 'crash|timeout|wrong-value' logs/debug-interpreter/summary.md"
+
+      - name: Collect crash reports
+        if: always()
+        run: |
+          mkdir -p logs/crash-reports
+          find ~/Library/Logs/DiagnosticReports /Library/Logs/DiagnosticReports -name '*MudSliderHybridRepro*' -exec cp {} logs/crash-reports/ \; 2>/dev/null || true
+          ls -la logs/crash-reports
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: reporter-logs-sdk-${{ matrix.sdk }}
+          path: logs/
+          if-no-files-found: ignore

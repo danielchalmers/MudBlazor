@@ -3,6 +3,10 @@ name: iOS AOT repro (MudBlazor#14134)
 on:
   push:
     branches: [ios-aot-repro-14134]
+    paths:
+      - Issue14134.*/**
+      - run-sim.sh
+      - global.json
   workflow_dispatch:
 
 permissions:
