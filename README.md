@@ -23,6 +23,7 @@ Both runtimes crash under full AOT in every case, with `Attempting to JIT compil
 | `app-instantiate` | The app constructs `MudSlider<int>` and `MudSlider<double>` in a method it never calls, so Mono precompiles those types | Passes |
 | `double-parse` | Parses a double, then `T.CreateSaturating` | Passes |
 | `typed-only` | Built-in number types only, with no `T.TryParse` anywhere (experiment) | Passes |
+| `decimal-direct` | The shape in MudBlazor#14136: `decimal.TryParse` behind a `typeof(T)` check and a box cast, a double and `T.CreateSaturating` for everything else | Passes ([run](https://github.com/danielchalmers/MudBlazor/actions/runs/42298999676)) |
 
 When Mono hasn't compiled `MudSlider<T>` for the concrete `T`, it runs shared generic code, which can't contain `T.TryParse`, and starting a shared method resolves everything it calls. `T.Zero`, `T.One` and `T.CreateTruncating` in the constructor work in that mode.
 
