@@ -41,8 +41,8 @@ When Mono hasn't compiled `MudSlider<T>` for the concrete `T`, it runs shared ge
 | `svm-async-long-shared` | Slider shape, but the closed type is only a type argument to a shared generic method called from the app, like `OpenComponent<MudSlider<double>>` | Crashes in Debug and Release |
 | `nosvm-async-long-shared` | Same reach, no `T.TryParse` | Passes |
 | `sat-async-long-shared` | Same reach, `double.TryParse` then `T.CreateSaturating` (the fix) | Passes |
-| `bare-long-shared` | Smallest form: a non-async method calling `T.TryParse`, reached through a shared generic factory | Pending |
-| `bare-short-new` | Same method on a type the app constructs with `new` | Pending |
+| `bare-long-shared` | Smallest form: a non-async method calling `T.TryParse`, reached through a shared generic factory | Throws `ExecutionEngineException` in Debug and Release |
+| `bare-short-new` | Same method on a type the app constructs with `new` | Passes |
 
 The first six pass because `typeof(SvmAsyncHolder<int>)` in the library lets the AOT compiler see the closed types. Everything passes with the interpreter.
 
