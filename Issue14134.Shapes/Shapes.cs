@@ -187,11 +187,15 @@ public static class Cases
         "svm-async-long-shared",
         "nosvm-async-long-shared",
         "sat-async-long-shared",
+        "bare-long-shared",
+        "bare-short-new",
     ];
 
     // Blazor's OpenComponent<TComponent> passes the component only as a type argument, and Mono compiles that method once for all reference types.
     // The *-long-shared cases go through here from the app, and their closed holder types appear nowhere else, so AOT never compiles them for long.
     public static HolderBase Open<THolder>() where THolder : HolderBase => (HolderBase)Activator.CreateInstance(typeof(THolder))!;
+
+    public static string RunBare(BareBase holder) => holder.Set("181") ? holder.Text : "parse failed";
 
     public static async Task<string> RunAsync(HolderBase holder)
     {
@@ -229,4 +233,36 @@ public static class Cases
 
     // Blazor creates components from a Type, so AOT never sees a direct `new` of the holder.
     private static HolderBase Create(Type type) => (HolderBase)Activator.CreateInstance(type)!;
+}
+
+// The smallest form, used in the dotnet/runtime report: no async, no delegates, one static abstract call.
+public abstract class BareBase
+{
+    public abstract bool Set(string text);
+
+    public abstract string Text { get; }
+}
+
+public sealed class BareHolder<T> : BareBase where T : struct, INumber<T>
+{
+    private T _value;
+
+    public override string Text => _value.ToString(null, CultureInfo.InvariantCulture);
+
+    public override bool Set(string text)
+    {
+        if (!T.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
+        {
+            return false;
+        }
+
+        _value = result;
+        return true;
+    }
+}
+
+public static class BareFactory
+{
+    // Like Blazor's OpenComponent<TComponent>(): the closed type is only a type argument, and this compiles once for all reference types.
+    public static BareBase Create<THolder>() where THolder : BareBase => (BareBase)Activator.CreateInstance(typeof(THolder))!;
 }

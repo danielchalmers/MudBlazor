@@ -48,6 +48,8 @@ public class SceneDelegate : UIResponder, IUIWindowSceneDelegate {
 				"svm-async-long-shared" => await Cases.RunAsync (Cases.Open<SvmAsyncHolder<long>> ()),
 				"nosvm-async-long-shared" => await Cases.RunAsync (Cases.Open<NoSvmAsyncHolder<long>> ()),
 				"sat-async-long-shared" => await Cases.RunAsync (Cases.Open<SatAsyncHolder<long>> ()),
+				"bare-long-shared" => Cases.RunBare (BareFactory.Create<BareHolder<long>> ()),
+				"bare-short-new" => Cases.RunBare (new BareHolder<short> ()),
 				_ => await Cases.RunAsync (name),
 			};
 			Console.WriteLine ($"I14134 ok {name} value={value}");

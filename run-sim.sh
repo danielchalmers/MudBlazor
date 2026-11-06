@@ -13,7 +13,7 @@ if [ ! -d Issue14134.Ios ]; then
 fi
 
 config=${CONFIG:-Debug}
-cases=(svm-async-int svm-async-double svm-async-int-direct nosvm-async-int svm-sync-int nosvm-sync-int svm-async-long-shared nosvm-async-long-shared sat-async-long-shared)
+cases=(svm-async-int svm-async-double svm-async-int-direct nosvm-async-int svm-sync-int nosvm-sync-int svm-async-long-shared nosvm-async-long-shared sat-async-long-shared bare-long-shared bare-short-new)
 logs=${LOG_DIR:-logs}
 mkdir -p "$logs"
 
