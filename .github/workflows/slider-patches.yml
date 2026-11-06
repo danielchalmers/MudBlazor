@@ -29,8 +29,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - variant: float-or-decimal
-            mudblazor: float-or-decimal
+          - variant: decimal-then-double
+            mudblazor: decimal-then-double
     steps:
       - uses: actions/checkout@v7
         with:
