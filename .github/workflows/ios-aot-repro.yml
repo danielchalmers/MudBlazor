@@ -13,10 +13,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # One job running the builds in sequence: macOS arm64 runners are scarce, so parallel jobs can sit unassigned.
+  # Builds run in sequence within a job. The same job targets three images because macOS arm64 runners are scarce
+  # and a job can go unassigned; each image gets the iOS workload release that matches its Xcode.
   simulator:
-    runs-on: macos-26
+    name: ${{ matrix.image }} (Xcode ${{ matrix.xcode }})
+    runs-on: ${{ matrix.image }}
     timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: xcode-27
+            xcode: "27.1"
+            ios: 27.1.10018/10.0.100
+          - image: macos-26
+            xcode: "26.6"
+            ios: 26.5.10318/10.0.100
+          - image: macos-15
+            xcode: "26.3"
+            ios: 26.2.10233/10.0.100
     steps:
       - uses: actions/checkout@v7
 
@@ -24,12 +39,11 @@ jobs:
         with:
           global-json-file: global.json
 
-      # The latest iOS workload needs Xcode 27.1; 26.5.10318 is the release for this image's Xcode 26.6.
-      - name: Install iOS workload for Xcode 26.6
+      - name: Install iOS workload ${{ matrix.ios }}
         run: |
-          sudo xcode-select -s /Applications/Xcode_26.6.app
+          sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app
           dotnet workload config --update-mode manifests
-          echo '{"microsoft.net.sdk.ios": "26.5.10318/10.0.100"}' > rollback.json
+          echo '{"microsoft.net.sdk.ios": "${{ matrix.ios }}"}' > rollback.json
           dotnet workload install ios --from-rollback-file rollback.json
           xcodebuild -version
           dotnet --version
@@ -72,6 +86,6 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: logs
+          name: logs-${{ matrix.image }}
           path: logs/
           if-no-files-found: ignore
