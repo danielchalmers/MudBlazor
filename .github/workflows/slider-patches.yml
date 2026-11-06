@@ -29,10 +29,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - variant: double-parse
-            mudblazor: double-parse
-          - variant: typed-only
-            mudblazor: typed-only
+          - variant: decimal-direct
+            mudblazor: decimal-direct
     steps:
       - uses: actions/checkout@v7
         with:
