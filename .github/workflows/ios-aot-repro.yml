@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Builds run in sequence within a job. The same job targets three images because macOS arm64 runners are scarce
-  # and a job can go unassigned; each image gets the iOS workload release that matches its Xcode.
+  # Builds run in sequence within a job. Each image gets the iOS workload release that matches its Xcode.
+  # macos-26 (Xcode 26.6, iOS 26.5.10318) and macos-15 (Xcode 26.3, iOS 26.2.10233) never got an arm64 runner, so only xcode-27 runs.
   simulator:
     name: ${{ matrix.image }} (Xcode ${{ matrix.xcode }})
     runs-on: ${{ matrix.image }}
@@ -26,12 +26,6 @@ jobs:
           - image: xcode-27
             xcode: "27.1"
             ios: 27.1.10018/10.0.100
-          - image: macos-26
-            xcode: "26.6"
-            ios: 26.5.10318/10.0.100
-          - image: macos-15
-            xcode: "26.3"
-            ios: 26.2.10233/10.0.100
     steps:
       - uses: actions/checkout@v7
 
@@ -81,7 +75,8 @@ jobs:
         if: always()
         run: |
           mkdir -p logs/crash-reports
-          cp ~/Library/Logs/DiagnosticReports/Issue14134* logs/crash-reports/ 2>/dev/null || true
+          find ~/Library/Logs/DiagnosticReports /Library/Logs/DiagnosticReports -name '*Issue14134*' -exec cp {} logs/crash-reports/ \; 2>/dev/null || true
+          ls -la logs/crash-reports
 
       - uses: actions/upload-artifact@v7
         if: always()

@@ -39,6 +39,11 @@ for c in "${cases[@]}"; do
     detail=
   else
     result=FAIL
+    # The console relay drops output when the app aborts; the simulator's unified log keeps it.
+    pid=$(grep -oE "^$bundle: [0-9]+" "$logs/$c.log" | grep -oE '[0-9]+$' | tail -1 || true)
+    if [ -n "$pid" ]; then
+      { echo "--- unified log for pid $pid"; xcrun simctl spawn "$device" log show --style compact --last 5m --predicate "processID == $pid"; } >> "$logs/$c.log" 2>&1 || true
+    fi
     detail=$(grep -m1 -E 'Assertion|Attempting to JIT|I14134 error' "$logs/$c.log" | cut -c1-300 || true)
   fi
   echo "$c: $result${detail:+ - $detail}"
