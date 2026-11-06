@@ -19,8 +19,12 @@ Both runtimes crash under full AOT in every case, with `Attempting to JIT compil
 | `stock` | None; a source build of the tag | Crashes like the package |
 | `parse-helper` | `SetValueTextAsync` stays async; `T.TryParse` moves to a separate method | Crashes; Mono now tries to JIT that method |
 | `sync-setter` | `SetValueTextAsync` isn't async; the second `SetValueAsync` is chained through a non-generic helper | No crash, but the app stops responding after the first input |
-| `typed-parse` | Built-in number types parse with their own `TryParse`; only other types reach `T.TryParse` | Pending |
-| `app-instantiate` | The app constructs `MudSlider<int>` and `MudSlider<double>` in a method it never calls, so Mono precompiles those types | Pending |
+| `typed-parse` | Built-in number types parse with their own `TryParse`; only other types reach `T.TryParse`, in a separate method | Crashes; Mono tries to JIT the fallback even though int and double never call it |
+| `app-instantiate` | The app constructs `MudSlider<int>` and `MudSlider<double>` in a method it never calls, so Mono precompiles those types | Passes |
+| `double-parse` | Parses a double, then `T.CreateSaturating` | Pending |
+| `typed-only` | Built-in number types only, with no `T.TryParse` anywhere (experiment) | Pending |
+
+When Mono hasn't compiled `MudSlider<T>` for the concrete `T`, it runs shared generic code, which can't contain `T.TryParse`, and starting a shared method resolves everything it calls. `T.Zero`, `T.One` and `T.CreateTruncating` in the constructor work in that mode.
 
 ## Minimal repro
 

@@ -1,0 +1,50 @@
+diff --git a/src/MudBlazor/Components/Slider/MudSlider.razor.cs b/src/MudBlazor/Components/Slider/MudSlider.razor.cs
+index 2ae558812..df896ad6c 100644
+--- a/src/MudBlazor/Components/Slider/MudSlider.razor.cs
++++ b/src/MudBlazor/Components/Slider/MudSlider.razor.cs
+@@ -265,13 +265,44 @@ namespace MudBlazor
+ 
+         private async Task SetValueTextAsync(string? text)
+         {
+-            if (T.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
++            if (TryParseValueText(text, out var result))
+             {
+                 await _valueState.SetValueAsync(result);
+                 await _nullableValueState.SetValueAsync(result);
+             }
+         }
+ 
++        // Experiment: no static abstract member anywhere on this path; other number types are unsupported.
++        private static bool TryParseValueText(string? text, out T result)
++        {
++            var styles = NumberStyles.Any;
++            var culture = CultureInfo.InvariantCulture;
++            object? parsed = Type.GetTypeCode(typeof(T)) switch
++            {
++                TypeCode.SByte => sbyte.TryParse(text, styles, culture, out var v0) ? v0 : null,
++                TypeCode.Byte => byte.TryParse(text, styles, culture, out var v1) ? v1 : null,
++                TypeCode.Int16 => short.TryParse(text, styles, culture, out var v2) ? v2 : null,
++                TypeCode.UInt16 => ushort.TryParse(text, styles, culture, out var v3) ? v3 : null,
++                TypeCode.Int32 => int.TryParse(text, styles, culture, out var v4) ? v4 : null,
++                TypeCode.UInt32 => uint.TryParse(text, styles, culture, out var v5) ? v5 : null,
++                TypeCode.Int64 => long.TryParse(text, styles, culture, out var v6) ? v6 : null,
++                TypeCode.UInt64 => ulong.TryParse(text, styles, culture, out var v7) ? v7 : null,
++                TypeCode.Single => float.TryParse(text, styles, culture, out var v8) ? v8 : null,
++                TypeCode.Double => double.TryParse(text, styles, culture, out var v9) ? v9 : null,
++                TypeCode.Decimal => decimal.TryParse(text, styles, culture, out var v10) ? v10 : null,
++                _ => throw new NotSupportedException(typeof(T).Name),
++            };
++
++            if (parsed is T value)
++            {
++                result = value;
++                return true;
++            }
++
++            result = default;
++            return false;
++        }
++
+         private Task OnValueParameterChangedAsync(ParameterChangedEventArgs<T> arg)
+         {
+             if (_nullableValueResetToDefault)

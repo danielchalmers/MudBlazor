@@ -20,7 +20,7 @@ jobs:
   # A `mudblazor` patch builds MudBlazor 9.12.0 from source with it and swaps the DLL into the reporter's app; `stock` builds the tag unpatched.
   # An `app` file is added to the reporter's app, which then uses the MudBlazor 9.12.0 package as is.
   # Runtime 10.0.13 and 10.0.14 both crash, so this uses the newer one.
-  # Earlier results: stock, parse-helper (T.TryParse in its own method) and sync-setter (no async) all fail; parse-helper JITs that method.
+  # Earlier results are in the README.
   patch:
     name: ${{ matrix.variant }}
     runs-on: xcode-27
@@ -29,10 +29,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - variant: typed-parse
-            mudblazor: typed-parse
-          - variant: app-instantiate
-            app: AotRoots.cs
+          - variant: double-parse
+            mudblazor: double-parse
+          - variant: typed-only
+            mudblazor: typed-only
     steps:
       - uses: actions/checkout@v7
         with:

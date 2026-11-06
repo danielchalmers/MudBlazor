@@ -1,0 +1,19 @@
+diff --git a/src/MudBlazor/Components/Slider/MudSlider.razor.cs b/src/MudBlazor/Components/Slider/MudSlider.razor.cs
+index 2ae558812..00dbd4114 100644
+--- a/src/MudBlazor/Components/Slider/MudSlider.razor.cs
++++ b/src/MudBlazor/Components/Slider/MudSlider.razor.cs
+@@ -263,10 +263,13 @@ namespace MudBlazor
+ 
+         private string GetValueText => _valueState.Value.ToString(null, CultureInfo.InvariantCulture);
+ 
++        // Mono full AOT on iOS can't run code that calls T.TryParse unless MudSlider<T> was compiled for that exact T, so the text parses as a double.
++        // Range inputs hold JavaScript numbers, so a double loses nothing.
+         private async Task SetValueTextAsync(string? text)
+         {
+-            if (T.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
++            if (double.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var number))
+             {
++                var result = T.CreateSaturating(number);
+                 await _valueState.SetValueAsync(result);
+                 await _nullableValueState.SetValueAsync(result);
+             }
