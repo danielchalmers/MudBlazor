@@ -1,4 +1,4 @@
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Issue14134.Ios;
@@ -43,7 +43,13 @@ public class SceneDelegate : UIResponder, IUIWindowSceneDelegate {
 		Console.WriteLine ($"I14134 runtime {RuntimeInformation.FrameworkDescription} dynamicCode={RuntimeFeature.IsDynamicCodeSupported} compiled={RuntimeFeature.IsDynamicCodeCompiled}");
 		Console.WriteLine ($"I14134 start {name}");
 		try {
-			var value = await Cases.RunAsync (name);
+			// Like Razor's OpenComponent<MudSlider<double>>: the closed type is only a type argument, here in the app assembly.
+			var value = name switch {
+				"svm-async-long-shared" => await Cases.RunAsync (Cases.Open<SvmAsyncHolder<long>> ()),
+				"nosvm-async-long-shared" => await Cases.RunAsync (Cases.Open<NoSvmAsyncHolder<long>> ()),
+				"sat-async-long-shared" => await Cases.RunAsync (Cases.Open<SatAsyncHolder<long>> ()),
+				_ => await Cases.RunAsync (name),
+			};
 			Console.WriteLine ($"I14134 ok {name} value={value}");
 			label.Text = $"{name}: {value}";
 			Environment.Exit (0);

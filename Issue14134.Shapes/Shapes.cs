@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Numerics;
 
 namespace Issue14134;
@@ -50,6 +50,27 @@ public sealed class SvmAsyncHolder<T> : HolderBase where T : struct, INumber<T>
     {
         if (T.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
         {
+            await _valueState.SetValueAsync(result);
+            await _nullableValueState.SetValueAsync(result);
+        }
+    }
+}
+
+// The fix that shipped in the patch test: parse a double, then convert with a static abstract call that shared code supports.
+public sealed class SatAsyncHolder<T> : HolderBase where T : struct, INumber<T>
+{
+    private readonly State<T> _valueState = new();
+    private readonly State<T?> _nullableValueState = new();
+
+    public override string ValueText => _valueState.Value.ToString(null, CultureInfo.InvariantCulture);
+
+    public override Func<string?, Task> CreateSetter() => SetValueTextAsync;
+
+    private async Task SetValueTextAsync(string? text)
+    {
+        if (double.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var number))
+        {
+            var result = T.CreateSaturating(number);
             await _valueState.SetValueAsync(result);
             await _nullableValueState.SetValueAsync(result);
         }
@@ -163,7 +184,22 @@ public static class Cases
         "nosvm-async-int",
         "svm-sync-int",
         "nosvm-sync-int",
+        "svm-async-long-shared",
+        "nosvm-async-long-shared",
+        "sat-async-long-shared",
     ];
+
+    // Blazor's OpenComponent<TComponent> passes the component only as a type argument, and Mono compiles that method once for all reference types.
+    // The *-long-shared cases go through here from the app, and their closed holder types appear nowhere else, so AOT never compiles them for long.
+    public static HolderBase Open<THolder>() where THolder : HolderBase => (HolderBase)Activator.CreateInstance(typeof(THolder))!;
+
+    public static async Task<string> RunAsync(HolderBase holder)
+    {
+        var setter = holder.CreateSetter();
+        var binder = Binder.Create<string?>(setter, static value => value?.ToString());
+        await (Task)binder.DynamicInvoke("181")!;
+        return holder.ValueText;
+    }
 
     public static async Task<string> RunAsync(string name)
     {
