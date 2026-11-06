@@ -18,8 +18,14 @@ app="$app_dir/bin/$config/net10.0-ios/iossimulator-arm64/MudSliderHybridRepro.ap
 bundle=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Info.plist")
 
 # A plain numbered iPhone on the newest runtime, unless SIM_DEVICE is set; "iPhone Duo" shut down on every launch.
-devices=$(xcrun simctl list devices available)
-device=${SIM_DEVICE:-$({ grep -E '^ +iPhone [0-9]+ \(' <<< "$devices" || grep 'iPhone' <<< "$devices"; } | tail -1 | grep -oE '[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}')}
+# Kept to plain statements because macOS runs this with bash 3.2.
+device=${SIM_DEVICE:-}
+if [ -z "$device" ]; then
+  iphones=$(xcrun simctl list devices available | grep 'iPhone' || true)
+  pick=$(echo "$iphones" | grep -E '^ +iPhone [0-9]+ [(]' | tail -1 || true)
+  [ -n "$pick" ] || pick=$(echo "$iphones" | tail -1)
+  device=$(echo "$pick" | grep -oE '[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}')
+fi
 echo "Simulator: $(xcrun simctl list devices available | grep "$device" | xargs)"
 xcrun simctl boot "$device" 2>/dev/null || true
 xcrun simctl bootstatus "$device" -b >/dev/null
