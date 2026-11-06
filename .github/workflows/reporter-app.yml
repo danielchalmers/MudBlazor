@@ -94,7 +94,7 @@ jobs:
       # A failure here means the harness is broken, not Mono.
       - name: Check control
         if: success() || failure()
-        run: "! grep -qE 'crash|timeout|wrong-value' logs/debug-interpreter/summary.md"
+        run: "! grep -qE 'crash|timeout|wrong-value|sim-error' logs/debug-interpreter/summary.md"
 
       - name: Collect crash reports
         if: always()

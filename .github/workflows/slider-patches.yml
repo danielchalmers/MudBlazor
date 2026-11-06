@@ -1,0 +1,117 @@
+name: MudSlider patches on iOS AOT (MudBlazor#14134)
+
+on:
+  push:
+    branches: [ios-aot-repro-14134]
+    paths:
+      - patches/**
+      - run-reporter.sh
+      - .github/workflows/slider-patches.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Builds MudBlazor 9.12.0 from source with each patch, swaps the DLL into the reporter's app, and drives the slider under full AOT.
+  # `stock` builds the tag unpatched, so a pass for a patch can't come from building from source.
+  # Runtime 10.0.13 and 10.0.14 both crash, so this uses the newer one.
+  patch:
+    name: ${{ matrix.patch }}
+    runs-on: xcode-27
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        patch: [stock, parse-helper, sync-setter]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/checkout@v7
+        with:
+          repository: techscex/MudBlazorTestOne
+          ref: 1ceb091ea1f321fcb00a71d91a51b2db41e46a88
+          path: reporter
+          persist-credentials: false
+
+      # v9.12.0
+      - uses: actions/checkout@v7
+        with:
+          repository: MudBlazor/MudBlazor
+          ref: e087cf8d745ce1cc24623d84847cf563e09b1373
+          path: mudblazor
+          persist-credentials: false
+
+      - name: Pin SDK 10.0.403 and workload set 10.0.403
+        run: |
+          cat > reporter/global.json <<EOF
+          {
+            "sdk": {
+              "version": "10.0.403",
+              "rollForward": "disable",
+              "workloadVersion": "10.0.403"
+            }
+          }
+          EOF
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: reporter/global.json
+
+      - name: Install workloads
+        working-directory: reporter
+        run: |
+          sudo xcode-select -s /Applications/Xcode_27.1.app
+          dotnet workload restore MudSliderHybridRepro.csproj
+          dotnet workload list
+
+      - name: Build MudBlazor 9.12.0 (${{ matrix.patch }})
+        run: |
+          if [ "${{ matrix.patch }}" != stock ]; then git -C mudblazor apply "$PWD/patches/${{ matrix.patch }}.patch"; fi
+          git -C mudblazor status --short
+          dotnet build mudblazor/src/MudBlazor/MudBlazor.csproj -c Release -f net10.0 -p:SkipBunCompile=true -p:Version=9.12.0 --nologo
+
+      # The package keeps its static web assets; only the assembly changes.
+      - name: Swap it into the reporter's app
+        working-directory: reporter
+        run: |
+          dotnet restore MudSliderHybridRepro.csproj -r iossimulator-arm64
+          built=../mudblazor/src/MudBlazor/bin/Release/net10.0/MudBlazor.dll
+          pkg=${NUGET_PACKAGES:-$HOME/.nuget/packages}/mudblazor/9.12.0/lib/net10.0/MudBlazor.dll
+          cp "$built" "$pkg"
+          shasum -a 256 "$built" "$pkg"
+
+      - name: Debug, full AOT
+        env:
+          CONFIG: Debug
+          LABEL: ${{ matrix.patch }}
+          LOG_DIR: ${{ github.workspace }}/logs/debug-aot
+        run: bash run-reporter.sh
+
+      - name: Release, full AOT
+        if: success() || failure()
+        env:
+          CONFIG: Release
+          LABEL: ${{ matrix.patch }}
+          LOG_DIR: ${{ github.workspace }}/logs/release-aot
+        run: bash run-reporter.sh
+
+      - name: Collect crash reports
+        if: always()
+        run: |
+          mkdir -p logs/crash-reports
+          find ~/Library/Logs/DiagnosticReports /Library/Logs/DiagnosticReports -name '*MudSliderHybridRepro*' -exec cp {} logs/crash-reports/ \; 2>/dev/null || true
+          ls -la logs/crash-reports
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: patch-logs-${{ matrix.patch }}
+          path: logs/
+          if-no-files-found: ignore

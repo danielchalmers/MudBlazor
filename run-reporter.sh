@@ -17,16 +17,19 @@ dotnet build MudSliderHybridRepro.csproj -c "$config" -r iossimulator-arm64 "$@"
 app="$app_dir/bin/$config/net10.0-ios/iossimulator-arm64/MudSliderHybridRepro.app"
 bundle=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Info.plist")
 
-# Newest runtime's last iPhone, unless SIM_DEVICE is set.
-device=${SIM_DEVICE:-$(xcrun simctl list devices available | grep 'iPhone' | tail -1 | grep -oE '[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}')}
+# A plain numbered iPhone on the newest runtime, unless SIM_DEVICE is set; "iPhone Duo" shut down on every launch.
+devices=$(xcrun simctl list devices available)
+device=${SIM_DEVICE:-$({ grep -E '^ +iPhone [0-9]+ \(' <<< "$devices" || grep 'iPhone' <<< "$devices"; } | tail -1 | grep -oE '[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}')}
 echo "Simulator: $(xcrun simctl list devices available | grep "$device" | xargs)"
 xcrun simctl boot "$device" 2>/dev/null || true
 xcrun simctl bootstatus "$device" -b >/dev/null
 xcrun simctl install "$device" "$app"
+if [ -f "$app/MudBlazor.dll" ]; then echo "App bundle MudBlazor.dll: $(shasum -a 256 "$app/MudBlazor.dll" | cut -d' ' -f1)"; fi
 
-# Launches one case and waits for the driver to finish, the app to exit, or 90 seconds. Prints pass, crash or timeout.
+# Launches one case and waits for the driver to finish, the app to exit, or 90 seconds. Prints pass, wrong-value, crash, timeout or sim-error.
 run_case() {
   local c=$1 log=$2 launcher
+  xcrun simctl bootstatus "$device" -b >/dev/null 2>&1 || true
   SIMCTL_CHILD_REPRO_START_PATH="/matched-sliders?case=$c&drive=true" \
     xcrun simctl launch --console --terminate-running-process "$device" "$bundle" > "$log" 2>&1 &
   launcher=$!
@@ -38,6 +41,7 @@ run_case() {
   done
   xcrun simctl terminate "$device" "$bundle" 2>/dev/null || true
   wait "$launcher" 2>/dev/null || true
+  if grep -q 'Unable to lookup in current state' "$log"; then echo sim-error; return; fi
   if [ "$outcome" = done ]; then
     # The driver's last input is 260; anything else means the binding didn't round-trip.
     if grep "synthetic-completed|$c|" "$log" | grep -q '"input":"260","observed":"260"'; then echo pass; else echo wrong-value; fi
@@ -70,5 +74,5 @@ done
 runtime=$(ls "${DOTNET_ROOT:-$(dirname "$(command -v dotnet)")}/packs/Microsoft.NETCore.App.Runtime.Mono.iossimulator-arm64" 2>/dev/null | tr '\n' ' ' || true)
 echo "Mono runtime packs: ${runtime:-unknown}"
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
-  { echo "### Reporter app, $config ${*:-full AOT}"; echo; echo "SDK $(dotnet --version), Mono runtime pack ${runtime:-unknown}"; echo; cat "$summary"; } >> "$GITHUB_STEP_SUMMARY"
+  { echo "### Reporter app${LABEL:+ ($LABEL)}, $config ${*:-full AOT}"; echo; echo "SDK $(dotnet --version), Mono runtime pack ${runtime:-unknown}"; echo; cat "$summary"; } >> "$GITHUB_STEP_SUMMARY"
 fi

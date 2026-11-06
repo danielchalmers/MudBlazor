@@ -1,0 +1,47 @@
+diff --git a/src/MudBlazor/Components/Slider/MudSlider.razor.cs b/src/MudBlazor/Components/Slider/MudSlider.razor.cs
+index 2ae558812..d09af2320 100644
+--- a/src/MudBlazor/Components/Slider/MudSlider.razor.cs
++++ b/src/MudBlazor/Components/Slider/MudSlider.razor.cs
+@@ -263,13 +263,18 @@ namespace MudBlazor
+ 
+         private string GetValueText => _valueState.Value.ToString(null, CultureInfo.InvariantCulture);
+ 
+-        private async Task SetValueTextAsync(string? text)
++        private Task SetValueTextAsync(string? text)
+         {
+-            if (T.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
++            if (!T.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
+             {
+-                await _valueState.SetValueAsync(result);
+-                await _nullableValueState.SetValueAsync(result);
++                return Task.CompletedTask;
+             }
++
++            var setValue = _valueState.SetValueAsync(result);
++
++            return setValue.IsCompletedSuccessfully
++                ? _nullableValueState.SetValueAsync(result)
++                : TaskChain.ThenAsync(setValue, () => _nullableValueState.SetValueAsync(result));
+         }
+ 
+         private Task OnValueParameterChangedAsync(ParameterChangedEventArgs<T> arg)
+diff --git a/src/MudBlazor/Utilities/TaskChain.cs b/src/MudBlazor/Utilities/TaskChain.cs
+new file mode 100644
+index 000000000..97221092a
+--- /dev/null
++++ b/src/MudBlazor/Utilities/TaskChain.cs
+@@ -0,0 +1,14 @@
++﻿using System;
++using System.Threading.Tasks;
++
++namespace MudBlazor.Utilities
++{
++    internal static class TaskChain
++    {
++        public static async Task ThenAsync(Task first, Func<Task> next)
++        {
++            await first;
++            await next();
++        }
++    }
++}

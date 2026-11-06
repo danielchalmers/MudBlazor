@@ -8,6 +8,18 @@ Investigation branch for [MudBlazor#14134](https://github.com/MudBlazor/MudBlazo
 
 It runs on two workload sets that pin the same iOS (27.1.10018) and MAUI (10.0.110) and differ only in Mono: 10.0.402.1 (runtime 10.0.13, the reporter's) and 10.0.403 (runtime 10.0.14).
 
+Both runtimes crash under full AOT in every case, with `Attempting to JIT compile method 'void MudBlazor.MudSlider`1/<SetValueTextAsync>d__91<double>:MoveNext ()' while running in aot-only mode`, and pass with the interpreter. Updating .NET doesn't fix it.
+
+## Patches
+
+`slider-patches.yml` builds MudBlazor 9.12.0 from source, applies one patch from `patches/`, swaps the assembly into the reporter's app, and runs the same cases on runtime 10.0.14 in Debug and Release full AOT.
+
+| Patch | Change to `SetValueTextAsync` |
+| --- | --- |
+| `stock` | None; shows a source build still crashes |
+| `parse-helper` | Stays async; `T.TryParse` moves to a separate non-async method |
+| `sync-setter` | Not async; the second `SetValueAsync` is chained through a non-generic helper |
+
 ## Minimal repro
 
 `ios-aot-repro.yml` copies the shape of `MudSlider<T>.SetValueTextAsync` with no MAUI, Blazor or MudBlazor, and runs each case in a fresh launch. On runtime 10.0.14 every case passed in Debug and Release full AOT; an earlier run's two failures were launch flakes that died before any app code ran.
