@@ -12,6 +12,9 @@ cd "$root/smoke"
 dotnet build MudSmoke.csproj -c "$config" -r iossimulator-arm64 "$@"
 app="$root/smoke/bin/$config/net10.0-ios/iossimulator-arm64/MudSmoke.app"
 bundle=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Info.plist")
+# The executable holds the AOT-compiled code, so its size shows which assemblies were interpreted.
+executable=$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$app/Info.plist")
+echo "App executable: $(du -k "$app/$executable" | cut -f1) KB"
 
 # A plain numbered iPhone, unless SIM_DEVICE is set; "iPhone Duo" shut down on every launch. Plain statements because macOS runs bash 3.2.
 device=${SIM_DEVICE:-}

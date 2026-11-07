@@ -20,6 +20,7 @@ concurrency:
 jobs:
   # Renders and pokes one MudBlazor component at a time in a MAUI Blazor Hybrid app under Mono full AOT, with the interpreter as the control.
   # `package` is MudBlazor 9.12.0 as shipped; a `patch` builds 9.12.0 from source with that file from patches/ and swaps the DLL in.
+  # `interpret-mudblazor` tries a narrower workaround for MudBlazor#6558: AOT-compile everything except MudBlazor, which runs in the interpreter.
   smoke:
     name: ${{ matrix.variant }}
     runs-on: xcode-27
@@ -31,6 +32,9 @@ jobs:
           - variant: package
           - variant: pr-14136
             patch: decimal-then-double
+          # %2C because MSBuild splits -p: values on commas.
+          - variant: interpret-mudblazor
+            args: -p:MtouchInterpreter=-all%2CMudBlazor
     steps:
       - uses: actions/checkout@v7
         with:
@@ -74,16 +78,16 @@ jobs:
           cp "$built" "$pkg"
           shasum -a 256 "$built" "$pkg"
 
-      - name: Release, full AOT
+      - name: Release, ${{ matrix.args && 'MudBlazor interpreted' || 'full AOT' }}
         env:
           CONFIG: Release
           LABEL: ${{ matrix.variant }}
-          LOG_DIR: ${{ github.workspace }}/logs/release-aot
-        run: bash run-smoke.sh
+          LOG_DIR: ${{ github.workspace }}/logs/${{ matrix.args && 'release-interpret-mudblazor' || 'release-aot' }}
+        run: bash run-smoke.sh ${{ matrix.args }}
 
       # The control, for the shipped package only. The interpreter changes what gets AOT-compiled, so start from a clean build.
       - name: Release, interpreter
-        if: (success() || failure()) && !matrix.patch
+        if: (success() || failure()) && matrix.variant == 'package'
         env:
           CONFIG: Release
           LOG_DIR: ${{ github.workspace }}/logs/release-interpreter
@@ -93,7 +97,7 @@ jobs:
 
       # A crash or hang under the interpreter means the harness is broken, not Mono's AOT.
       - name: Check control
-        if: (success() || failure()) && !matrix.patch
+        if: (success() || failure()) && matrix.variant == 'package'
         run: "! grep -qE '[|] (crash|hang|no-start) [|]' logs/release-interpreter/summary.md"
 
       - name: Collect crash reports
