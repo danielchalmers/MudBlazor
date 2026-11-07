@@ -29,6 +29,17 @@ Both runtimes crash under full AOT in every case, with `Attempting to JIT compil
 
 When Mono hasn't compiled `MudSlider<T>` for the concrete `T`, it runs shared generic code, which can't contain `T.TryParse`, and starting a shared method resolves everything it calls. `T.Zero`, `T.One` and `T.CreateTruncating` in the constructor work in that mode.
 
+## Component smoke test
+
+`smoke.yml` checks whether anything besides MudSlider crashes under full AOT. `smoke/` is a MAUI Blazor Hybrid app that renders 47 MudBlazor components one at a time, each with a value type as its `T` where it has one. For each case it moves range inputs, types into text inputs, clicks buttons and opens popovers, then logs the outcome. `run-smoke.sh` relaunches the app from the next case after a crash or hang. The app is built in Release with full AOT; the interpreter run is a control.
+
+| Variant | Full AOT | Interpreter |
+| --- | --- | --- |
+| MudBlazor 9.12.0 package | 44 pass; `slider-int`, `slider-double` and `colorpicker-static` crash in `MudSlider<T>.SetValueTextAsync` | 47 pass |
+| 9.12.0 with MudBlazor#14136 | 47 pass | Not run |
+
+Both runs are [42321582554](https://github.com/danielchalmers/MudBlazor/actions/runs/42321582554) and [42323268283](https://github.com/danielchalmers/MudBlazor/actions/runs/42323268283). The cases cover inputs, pickers, selection controls, charts, the data grid and table, navigation and overlays; `Runner.razor` lists them.
+
 ## Minimal repro
 
 `ios-aot-repro.yml` copies the shape of `MudSlider<T>.SetValueTextAsync` with no MAUI, Blazor or MudBlazor, and runs each case in a fresh launch on runtime 10.0.14.
