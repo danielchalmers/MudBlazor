@@ -37,8 +37,9 @@ When Mono hasn't compiled `MudSlider<T>` for the concrete `T`, it runs shared ge
 | --- | --- | --- |
 | MudBlazor 9.12.0 package | 44 pass; `slider-int`, `slider-double` and `colorpicker-static` crash in `MudSlider<T>.SetValueTextAsync` | 47 pass |
 | 9.12.0 with MudBlazor#14136 | 47 pass | Not run |
+| 9.12.0 package, `MtouchInterpreter=-all,MudBlazor` | 47 pass, with only MudBlazor interpreted | |
 
-Both runs are [42321582554](https://github.com/danielchalmers/MudBlazor/actions/runs/42321582554) and [42323268283](https://github.com/danielchalmers/MudBlazor/actions/runs/42323268283). The cases cover inputs, pickers, selection controls, charts, the data grid and table, navigation and overlays; `Runner.razor` lists them.
+The runs are [42321582554](https://github.com/danielchalmers/MudBlazor/actions/runs/42321582554), [42323268283](https://github.com/danielchalmers/MudBlazor/actions/runs/42323268283) and [42327729077](https://github.com/danielchalmers/MudBlazor/actions/runs/42327729077). The app executable is 67,936 KB under full AOT, 58,952 KB with MudBlazor interpreted and 384 KB with everything interpreted, which confirms the narrower setting applied. The cases cover inputs, pickers, selection controls, charts, the data grid and table, navigation and overlays; `Runner.razor` lists them.
 
 ## Minimal repro
 
