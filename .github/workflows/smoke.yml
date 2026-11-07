@@ -1,0 +1,75 @@
+name: MudBlazor components on iOS AOT (smoke)
+
+on:
+  push:
+    branches: [ios-aot-repro-14134]
+    paths:
+      - smoke/**
+      - run-smoke.sh
+      - smoke-parse.py
+      - .github/workflows/smoke.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Renders and pokes one MudBlazor component at a time in a MAUI Blazor Hybrid app under Mono full AOT, with the interpreter as the control.
+  smoke:
+    name: MudBlazor 9.12.0
+    runs-on: xcode-27
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: smoke/global.json
+
+      - name: Install workloads
+        working-directory: smoke
+        run: |
+          sudo xcode-select -s /Applications/Xcode_27.1.app
+          dotnet workload restore MudSmoke.csproj
+          dotnet --version
+
+      - name: Release, full AOT
+        env:
+          CONFIG: Release
+          LOG_DIR: ${{ github.workspace }}/logs/release-aot
+        run: bash run-smoke.sh
+
+      # The control. The interpreter changes what gets AOT-compiled, so start from a clean build.
+      - name: Release, interpreter
+        if: success() || failure()
+        env:
+          CONFIG: Release
+          LOG_DIR: ${{ github.workspace }}/logs/release-interpreter
+        run: |
+          rm -rf smoke/bin smoke/obj
+          bash run-smoke.sh -p:MtouchInterpreter=all
+
+      # A crash or hang under the interpreter means the harness is broken, not Mono's AOT.
+      - name: Check control
+        if: success() || failure()
+        run: "! grep -qE '[|] (crash|hang|no-start) [|]' logs/release-interpreter/summary.md"
+
+      - name: Collect crash reports
+        if: always()
+        run: |
+          mkdir -p logs/crash-reports
+          find ~/Library/Logs/DiagnosticReports /Library/Logs/DiagnosticReports -name '*MudSmoke*' -exec cp {} logs/crash-reports/ \; 2>/dev/null || true
+          ls -la logs/crash-reports
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: smoke-logs
+          path: logs/
+          if-no-files-found: ignore
