@@ -81,5 +81,5 @@ done
 python3 "$root/smoke-parse.py" summary "$logs"/launch-*.log > "$logs/summary.md"
 cat "$logs/summary.md"
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
-  { echo "### Smoke, MudBlazor ${MUDBLAZOR_VERSION:-9.12.0}, $config ${*:-full AOT}"; echo; cat "$logs/summary.md"; } >> "$GITHUB_STEP_SUMMARY"
+  { echo "### Smoke, ${LABEL:-MudBlazor 9.12.0}, $config ${*:-full AOT}"; echo; cat "$logs/summary.md"; } >> "$GITHUB_STEP_SUMMARY"
 fi

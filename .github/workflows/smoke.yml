@@ -19,13 +19,30 @@ concurrency:
 
 jobs:
   # Renders and pokes one MudBlazor component at a time in a MAUI Blazor Hybrid app under Mono full AOT, with the interpreter as the control.
+  # `package` is MudBlazor 9.12.0 as shipped; a `patch` builds 9.12.0 from source with that file from patches/ and swaps the DLL in.
   smoke:
-    name: MudBlazor 9.12.0
+    name: ${{ matrix.variant }}
     runs-on: xcode-27
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: package
+          - variant: pr-14136
+            patch: decimal-then-double
     steps:
       - uses: actions/checkout@v7
         with:
+          persist-credentials: false
+
+      # v9.12.0
+      - uses: actions/checkout@v7
+        if: matrix.patch
+        with:
+          repository: MudBlazor/MudBlazor
+          ref: e087cf8d745ce1cc24623d84847cf563e09b1373
+          path: mudblazor
           persist-credentials: false
 
       - uses: actions/setup-dotnet@v6
@@ -39,15 +56,34 @@ jobs:
           dotnet workload restore MudSmoke.csproj
           dotnet --version
 
+      - name: Build MudBlazor 9.12.0 with ${{ matrix.patch }}
+        if: matrix.patch
+        run: |
+          git -C mudblazor apply "$PWD/patches/${{ matrix.patch }}.patch"
+          git -C mudblazor status --short
+          dotnet build mudblazor/src/MudBlazor/MudBlazor.csproj -c Release -f net10.0 -p:SkipBunCompile=true -p:Version=9.12.0 --nologo
+
+      # The package keeps its static web assets; only the assembly changes.
+      - name: Swap it into the app
+        if: matrix.patch
+        working-directory: smoke
+        run: |
+          dotnet restore MudSmoke.csproj -r iossimulator-arm64
+          built=../mudblazor/src/MudBlazor/bin/Release/net10.0/MudBlazor.dll
+          pkg=${NUGET_PACKAGES:-$HOME/.nuget/packages}/mudblazor/9.12.0/lib/net10.0/MudBlazor.dll
+          cp "$built" "$pkg"
+          shasum -a 256 "$built" "$pkg"
+
       - name: Release, full AOT
         env:
           CONFIG: Release
+          LABEL: ${{ matrix.variant }}
           LOG_DIR: ${{ github.workspace }}/logs/release-aot
         run: bash run-smoke.sh
 
-      # The control. The interpreter changes what gets AOT-compiled, so start from a clean build.
+      # The control, for the shipped package only. The interpreter changes what gets AOT-compiled, so start from a clean build.
       - name: Release, interpreter
-        if: success() || failure()
+        if: (success() || failure()) && !matrix.patch
         env:
           CONFIG: Release
           LOG_DIR: ${{ github.workspace }}/logs/release-interpreter
@@ -57,7 +93,7 @@ jobs:
 
       # A crash or hang under the interpreter means the harness is broken, not Mono's AOT.
       - name: Check control
-        if: success() || failure()
+        if: (success() || failure()) && !matrix.patch
         run: "! grep -qE '[|] (crash|hang|no-start) [|]' logs/release-interpreter/summary.md"
 
       - name: Collect crash reports
@@ -70,6 +106,6 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: smoke-logs
+          name: smoke-logs-${{ matrix.variant }}
           path: logs/
           if-no-files-found: ignore
